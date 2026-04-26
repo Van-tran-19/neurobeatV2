@@ -17,6 +17,11 @@ class GameScreen:
         pygame.mixer.music.load(self.current_song['filename'])
         pygame.mixer.music.play()
         print(f"En écoute : {self.current_song['title']}")
+        if self.current_song is None:
+            print("⚠️ ALERTE : Aucune musique trouvée dans la base de données !")
+            # On retourne au menu au lieu de crasher
+            self.app.go_to("home")
+            return
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
