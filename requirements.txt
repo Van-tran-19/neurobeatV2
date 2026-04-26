@@ -1,0 +1,12 @@
+# Graphismes et interface
+pygame
+
+# Reconnaissance vocale (STT)
+vosk
+pyaudio
+
+# Téléchargement et conversion audio
+yt-dlp
+
+# Utilitaires
+numpy
