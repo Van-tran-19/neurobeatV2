@@ -16,7 +16,6 @@ JUDGE_DELAY      = 2.0
 MAX_ROUNDS       = 10
 
 # ── Colour palette ──────────────────────────────────────────────────────────
-# Matches the royal-blue + gold theme from the PDF mockups
 C_BG        = ( 35,  38, 158)   # Deep royal blue
 C_PANEL     = ( 18,  20,  90)   # Dark navy card
 C_BORDER    = (200, 165,  35)   # Gold border
