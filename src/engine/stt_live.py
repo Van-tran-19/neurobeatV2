@@ -3,6 +3,7 @@ NeuroBeat — Live Speech-to-Text engine (Vosk).
 Appelé depuis game_logic.py avec le chemin du modèle et une liste de mots attendus.
 """
 
+from __future__ import annotations
 import sys
 import json
 import os
