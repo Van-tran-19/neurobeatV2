@@ -7,13 +7,13 @@ across different screens.
 from __future__ import annotations
 import pygame
 import math
-from constants import (
+from src.constants import (
     C_PANEL, C_BORDER, C_GOLD, C_WHITE, C_GREY,
     C_BTN, C_BTN_HOVER, C_NOTE_FILL, C_NOTE_LINE,
 )
 
 
-# ── Drawing primitives ───────────────────────────────────────────────────────
+# ── Drawing primitives ────────────────────────────────────────────────────────
 
 def draw_rounded_rect(
     surface: pygame.Surface,
@@ -46,13 +46,10 @@ def blit_centered(
     surface.blit(text_surf, (cx - text_surf.get_width() // 2, y))
 
 
-# ── Widgets ──────────────────────────────────────────────────────────────────
+# ── Widgets ───────────────────────────────────────────────────────────────────
 
 class Panel:
-    """
-    A card panel with a bold title, a gold separator, and a list of body lines.
-    Matches the card style in the PDF game-screen mockup.
-    """
+    """Card panel with bold title, gold separator and body lines."""
 
     def __init__(
         self,
@@ -85,7 +82,6 @@ class Panel:
         self.lines = lines
 
     def draw(self, surface: pygame.Surface) -> None:
-        # Background + border
         draw_rounded_rect(
             surface, self.colour, self.rect, self.radius,
             border_colour=self.border_colour, border_width=self.border_width,
@@ -93,19 +89,16 @@ class Panel:
 
         y = self.rect.y + 12
 
-        # Title row
         if self.title and self.font_title:
             surf = self.font_title.render(self.title, True, self.title_colour)
             blit_centered(surface, surf, self.rect.centerx, y)
             y += surf.get_height() + 6
-            # Separator
             pygame.draw.line(
                 surface, self.border_colour,
                 (self.rect.x + 8, y), (self.rect.right - 8, y), 1,
             )
             y += 8
 
-        # Body lines
         if self.font_body:
             lh = self.font_body.get_linesize() + self.line_height_extra
             for line in self.lines:
@@ -186,7 +179,7 @@ class ProgressBar:
 class MusicStaff:
     """
     Animated decorative musical staff with note heads.
-    Reproduces the wavy staff-with-notes motif seen in the PDF mockups.
+    Reproduces the wavy staff-with-notes motif from the PDF mockups.
     """
 
     def __init__(
@@ -206,8 +199,6 @@ class MusicStaff:
         self.amplitude = amplitude
         self.speed     = speed
         self._t        = 0.0
-
-        # Fractional positions along the staff where notes appear (0–1)
         self._note_pos = note_positions or [
             0.06, 0.15, 0.25, 0.36, 0.48, 0.59, 0.70, 0.81, 0.91,
         ]
@@ -219,10 +210,10 @@ class MusicStaff:
         return self.y + int(self.amplitude * math.sin(frac * math.pi * 2 + self._t * 2 * math.pi))
 
     def draw(self) -> None:
-        steps = self.width // 3
+        steps    = self.width // 3
         line_gap = 9
 
-        # Five staff lines
+        # Cinq lignes de portée
         for li in range(5):
             offset = (li - 2) * line_gap
             pts = [
@@ -233,21 +224,17 @@ class MusicStaff:
             if len(pts) >= 2:
                 pygame.draw.lines(self.surface, C_NOTE_LINE, False, pts, 2)
 
-        # Note heads with stems and flags
+        # Têtes de notes avec hampes et crochets
         for frac in self._note_pos:
             cx = self.x + int(frac * self.width)
             cy = self._wave_y(frac)
 
-            # Head
             head = pygame.Rect(cx - 9, cy - 6, 18, 12)
             pygame.draw.ellipse(self.surface, C_NOTE_FILL, head)
             pygame.draw.ellipse(self.surface, C_NOTE_LINE, head, 2)
 
-            # Stem
             pygame.draw.line(self.surface, C_NOTE_LINE, (cx + 8, cy), (cx + 8, cy - 28), 2)
 
-            # Simple flag
-            flag_top = (cx + 8, cy - 28)
             pygame.draw.arc(
                 self.surface, C_NOTE_LINE,
                 pygame.Rect(cx + 8, cy - 28, 14, 14),
