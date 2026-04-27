@@ -70,7 +70,6 @@ class App:
             self._active.update(dt)
             self._active.draw()
             pygame.display.flip()
-        }
 
         # Start on the splash screen
         self._active_key: str = "splash"
