@@ -256,36 +256,3 @@ class GameScreen(BaseScreen):
         blit_centered(self.screen, sub, cx, cy + 30)
 
         self._btn_home.draw(self.screen)
-        
-        # Logique de validation simplifiée
-        if guess.lower() in self.current_song['phonetic_answers'].lower():
-            print("BRAVO !")
-        else:
-            print("DOMMAGE...")
-        self.app.go_to("home")
-
-    def update(self, dt): pass
-
-    def draw(self):
-        self.app.screen.fill(C_BG)
-        font = pygame.font.SysFont("Arial", 30)
-
-        # Panneau central
-        panel_rect = pygame.Rect(self.app.width//4, self.app.height//4, self.app.width//2, self.app.height//2)
-        pygame.draw.rect(self.app.screen, C_PANEL, panel_rect, border_radius=20)
-        
-        if self.is_listening:
-            txt = "ÉCOUTEZ BIEN..."
-            sub_txt = "Appuyez sur ESPACE pour buzzer !"
-            color = C_WHITE
-        else:
-            txt = "ANALYSE DE VOTRE VOIX..."
-            sub_txt = "Parlez maintenant !"
-            color = C_GOLD
-
-        # Affichage des textes
-        surf = font.render(txt, True, color)
-        self.app.screen.blit(surf, (self.app.width//2 - surf.get_width()//2, self.app.height//2 - 50))
-        
-        sub_surf = font.render(sub_txt, True, C_WHITE)
-        self.app.screen.blit(sub_surf, (self.app.width//2 - sub_surf.get_width()//2, self.app.height//2 + 20))
