@@ -1,86 +1,94 @@
+"""
+NeuroBeat — Live Speech-to-Text engine (Vosk).
+Appelé depuis game_logic.py avec le chemin du modèle et une liste de mots attendus.
+"""
+
 import sys
 import json
+import os
 import pyaudio
 from vosk import Model, KaldiRecognizer
 
-# --- Configuration ---
-MODEL_PATH = "vosk-model-small-fr-0.22"         #French model of vosk to recognize french song
-SAMPLE_RATE = 16000
+# --- Configuration par défaut ---
+SAMPLE_RATE    = 16000
 RECORD_SECONDS = 5
-CHUNK_SIZE = 4000
+CHUNK_SIZE     = 4000
 
-# OPTIMIZATION: Restrict the vocabulary. 
-# Only include the exact artists and songs in your game.
-# Important: "[unk]" must always be included at the end for unknown sounds/noise.
-EXPECTED_WORDS = '["bohemian rhapsody", "queen", "michael jackson", "thriller","ninho","zipette" "[unk]"]'
+# Chemin vers les modèles (relatif à ce fichier)
+_ENGINE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_FR    = os.path.join(_ENGINE_DIR, "vosk-model-small-fr-0.22")
+MODEL_EN    = os.path.join(_ENGINE_DIR, "vosk-model-small-en-us-0.15")
 
-def live_transcribe_optimized(model_path):
-    # 1. Load the model
-    print("Loading model...")
+
+def live_transcribe_optimized(model_path: str, expected_words: list[str] | None = None) -> str:
+    """
+    Écoute le micro pendant RECORD_SECONDS secondes et retourne le texte reconnu.
+
+    Args:
+        model_path:     Chemin absolu vers le dossier du modèle Vosk.
+        expected_words: Liste de mots/phrases attendus pour restreindre le vocabulaire
+                        (accélère fortement la reconnaissance). Si None, pas de restriction.
+
+    Returns:
+        Le texte reconnu (str), éventuellement vide si rien n'a été détecté.
+    """
+    # 1. Chargement du modèle
+    print(f"[STT] Chargement du modèle : {model_path}")
     try:
         model = Model(model_path)
     except Exception as e:
-        print(f"Error loading model: {e}")
-        sys.exit(1)
+        print(f"[STT] Erreur chargement modèle : {e}")
+        return ""
 
-    # 2. Initialize recognizer with restricted grammar for massive speed boost
-    recognizer = KaldiRecognizer(model, SAMPLE_RATE, EXPECTED_WORDS)
+    # 2. Initialisation du recognizer
+    if expected_words:
+        # Grammaire restreinte : on ajoute toujours "[unk]" pour le bruit
+        grammar = json.dumps(expected_words + ["[unk]"])
+        recognizer = KaldiRecognizer(model, SAMPLE_RATE, grammar)
+    else:
+        recognizer = KaldiRecognizer(model, SAMPLE_RATE)
 
-    # 3. Initialize PyAudio for live microphone streaming
+    # 3. Ouverture du micro
     p = pyaudio.PyAudio()
     try:
-        stream = p.open(format=pyaudio.paInt16, 
-                        channels=1, 
-                        rate=SAMPLE_RATE, 
-                        input=True, 
-                        frames_per_buffer=CHUNK_SIZE)
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=SAMPLE_RATE,
+            input=True,
+            frames_per_buffer=CHUNK_SIZE,
+        )
     except Exception as e:
-        print(f"Error opening microphone: {e}")
+        print(f"[STT] Erreur ouverture micro : {e}")
         p.terminate()
-        sys.exit(1)
+        return ""
 
-    print(f"Listening live for {RECORD_SECONDS} seconds...")
+    print(f"[STT] Écoute pendant {RECORD_SECONDS} secondes...")
     stream.start_stream()
 
-    # Calculate how many chunks of audio equal 5 seconds
-    num_chunks = int((SAMPLE_RATE / CHUNK_SIZE) * RECORD_SECONDS)
+    num_chunks    = int((SAMPLE_RATE / CHUNK_SIZE) * RECORD_SECONDS)
     transcription = []
 
-    # 4. Process the audio stream in real-time
+    # 4. Traitement en temps réel
     for _ in range(num_chunks):
-        # Read a tiny chunk of audio from the microphone
         data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
-        
-        # Feed it to Vosk immediately
         if recognizer.AcceptWaveform(data):
-            result_dict = json.loads(recognizer.Result())
-            text = result_dict.get("text", "")
+            result = json.loads(recognizer.Result())
+            text   = result.get("text", "").strip()
             if text and text != "[unk]":
                 transcription.append(text)
 
-    # 5. The 5 seconds are up. Catch the very last words spoken.
-    final_dict = json.loads(recognizer.FinalResult())
-    final_text = final_dict.get("text", "")
-    if final_text and final_text != "[unk]":
-        transcription.append(final_text)
+    # 5. Récupération des derniers mots
+    final = json.loads(recognizer.FinalResult())
+    text  = final.get("text", "").strip()
+    if text and text != "[unk]":
+        transcription.append(text)
 
-    # 6. Clean up the audio stream
+    # 6. Nettoyage
     stream.stop_stream()
     stream.close()
     p.terminate()
 
-    # Join the detected words
-    return " ".join(transcription).strip()
-
-if __name__ == "__main__":
-    result = live_transcribe_optimized(MODEL_PATH)
-    
-    print("\n" + "-" * 50)
-    print("RESULT:")
-    print("-" * 50)
-    # If the user mumbled or said something not in the list, it might be empty
-    if not result:
-        print("No match found in the expected vocabulary.")
-    else:
-        print(result)
-    print("-" * 50 + "\n")
+    result_text = " ".join(transcription).strip()
+    print(f"[STT] Résultat : '{result_text}'")
+    return result_text
