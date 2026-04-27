@@ -1,24 +1,55 @@
-# s6-project/game_logic.py
-import Levenshtein # Pour tolérer les petites fautes de frappe/prononciation
-from audio_reco.stt_live_1.0 import live_transcribe_optimized
+"""
+NeuroBeat — Game logic : vérification des réponses et lancement du STT.
+"""
+
+from __future__ import annotations
+import Levenshtein
+import os
+
+from src.engine.stt_live import live_transcribe_optimized, MODEL_FR, MODEL_EN
+
 
 class GameEngine:
-    def __init__(self):
-        self.model_fr = "vosk-model-small-fr-0.22"
-        self.model_en = "vosk-model-small-en-us-0.15"
+    """
+    Encapsule la logique de reconnaissance vocale et de validation des réponses.
+    Instanciée une seule fois dans App et partagée entre les screens.
+    """
 
-    def recognize_speech(self, language='fr'):
-        model = self.model_fr if language == 'fr' else self.model_en
-        # Appelle ta fonction existante dans stt_live_1.0.py
-        return live_transcribe_optimized(model)
+    def __init__(self, language: str = "fr") -> None:
+        self.language  = language
+        self.model_path = MODEL_FR if language == "fr" else MODEL_EN
 
-    def check_answer(self, user_input, song_data):
-        # On compare l'input avec les phonetic_answers stockées en DB
-        valid_answers = [a.strip().lower() for a in song_data['phonetic_answers'].split(',')]
-        user_input = user_input.lower()
-        
+    def recognize_speech(self, expected_words: list[str] | None = None) -> str:
+        """
+        Lance la transcription live et retourne le texte reconnu.
+
+        Args:
+            expected_words: Liste de réponses valides pour restreindre le vocabulaire Vosk.
+                            Passer None pour un vocabulaire ouvert (plus lent).
+        """
+        return live_transcribe_optimized(self.model_path, expected_words)
+
+    def check_answer(self, user_input: str, song_data: dict) -> bool:
+        """
+        Compare l'input utilisateur aux réponses phonétiques acceptées (stockées en DB).
+        Tolère les petites fautes grâce à la distance de Levenshtein (seuil 0.75).
+
+        Returns:
+            True si une réponse correspond, False sinon.
+        """
+        raw_answers  = song_data.get("phonetic_answers", "") or ""
+        valid_answers = [a.strip().lower() for a in raw_answers.split(",") if a.strip()]
+        user_clean   = user_input.lower().strip()
+
         for answer in valid_answers:
-            # Si la distance est faible (score > 0.8), c'est gagné
-            if Levenshtein.ratio(user_input, answer) > 0.8:
+            if Levenshtein.ratio(user_clean, answer) > 0.75:
                 return True
         return False
+
+    def build_expected_words(self, song_data: dict) -> list[str]:
+        """
+        Construit la liste des mots attendus pour la grammaire Vosk à partir d'une chanson.
+        Permet d'accélérer massivement la reconnaissance.
+        """
+        raw = song_data.get("phonetic_answers", "") or ""
+        return [a.strip().lower() for a in raw.split(",") if a.strip()]
