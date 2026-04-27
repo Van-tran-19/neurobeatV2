@@ -116,26 +116,3 @@ class HomeScreen(BaseScreen):
 
         # Staff animé en bas
         self._staff.draw()
-    def on_exit(self): pass
-
-    def handle_event(self, event):
-        # Toujours possible de jouer avec Entrée
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.app.go_to("game")
-        
-        # Ou en cliquant sur le bouton
-        if self.play_button.is_clicked(event):
-            self.app.go_to("game")
-
-    def update(self, dt): pass
-
-    def draw(self):
-        self.app.screen.fill(C_BG)
-        
-        # Titre
-        font_title = pygame.font.SysFont("Arial", 50, bold=True)
-        title = font_title.render("NEUROBEAT", True, C_GOLD)
-        self.app.screen.blit(title, (self.app.width//2 - 140, 150))
-        
-        # Bouton
-        self.play_button.draw(self.app.screen)
