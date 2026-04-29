@@ -110,5 +110,3 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?)
             ''', (session_id, song_id, reaction_time_ms, was_correct))
             conn.commit()
-            
-    

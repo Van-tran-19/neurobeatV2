@@ -15,7 +15,7 @@ SAMPLE_RATE    = 16000
 RECORD_SECONDS = 5
 CHUNK_SIZE     = 4000
 
-# Chemin vers les modèles (relatif à ce fichier)
+# Chemin vers les modèles 
 _ENGINE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FR    = os.path.join(_ENGINE_DIR, "vosk-model-small-fr-0.22")
 MODEL_EN    = os.path.join(_ENGINE_DIR, "vosk-model-small-en-us-0.15")
