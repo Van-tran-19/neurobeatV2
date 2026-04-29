@@ -134,6 +134,15 @@ class GameScreen(BaseScreen):
         self._staff.draw()
 
         cx, cy = self.W // 2, self.H // 2
+        
+        # --- Affichage du profil utilisateur (HUD) ---
+        if self.app.current_user:
+            hud_text = f"Joueur: {self.app.current_user} | Score: {self.app.current_score}"
+            surf_hud = self._font_small.render(hud_text, True, C_WHITE)
+            self.screen.blit(surf_hud, (20, 20))
+
+        if self._state == _STATE_NO_SONG:
+            self._draw_no_song(cx, cy)
 
         if self._state == _STATE_NO_SONG:
             self._draw_no_song(cx, cy)
@@ -146,6 +155,22 @@ class GameScreen(BaseScreen):
 
         elif self._state == _STATE_RESULT:
             self._draw_result(cx, cy)
+            
+    def _show_result(self, correct: bool, guess: str) -> None:
+        pygame.mixer.music.stop()
+        self._result_ok    = correct
+        self._guess        = guess
+        self._result_timer = 0.0
+        self._state        = _STATE_RESULT
+
+        # --- Sauvegarde du score si la réponse est correcte ---
+        if correct and self.app.current_user:
+            # On ajoute 100 points pour une bonne réponse (par exemple)
+            self.app.db.save_score(self.app.current_user, 100) 
+            # Mise à jour du score local dans l'app
+            profile = self.app.db.get_profile(self.app.current_user)
+            if profile:
+               self.app.current_score = profile[2]
 
     # ── Private helpers ───────────────────────────────────────────────────────
 

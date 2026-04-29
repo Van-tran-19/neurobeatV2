@@ -83,6 +83,13 @@ class HomeScreen(BaseScreen):
     def draw(self) -> None:
         self.screen.fill(C_BG)
         self._draw_dot_grid()
+        
+        # --- Affichage du profil utilisateur ---
+        if self.app.current_user:
+            profile_text = f"Joueur: {self.app.current_user} | Score: {self.app.current_score}"
+            surf_profile = self._font_sub.render(profile_text, True, C_WHITE)
+            # Affichage en haut à gauche
+            self.screen.blit(surf_profile, (20, 20))
 
         # Titre
         surf = self._font_title.render("NEUROBEAT", True, C_GOLD)

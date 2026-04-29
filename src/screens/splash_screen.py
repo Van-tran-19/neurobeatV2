@@ -7,6 +7,7 @@ import pygame
 from src.screens.base_screen import BaseScreen
 from src.constants import C_BG, C_WHITE, C_GOLD, SPLASH_DURATION
 from src.widgets import MusicStaff, blit_centered
+from src.screens.login_screen import LoginScreen
 
 
 class SplashScreen(BaseScreen):
@@ -31,7 +32,7 @@ class SplashScreen(BaseScreen):
         self._timer += dt
         self._staff.update(dt)
         if self._timer >= SPLASH_DURATION:
-            self.app.go_to("home")
+            self.app.go_to("login")
 
     def draw(self) -> None:
         self.screen.fill(C_BG)
