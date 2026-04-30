@@ -20,7 +20,7 @@ class LoginScreen(BaseScreen):
         
         self._btn_login = Button(
             pygame.Rect(cx - 100, cy + 60, 200, 50),
-            "CONNEXION",
+            "LOGIN",
             self._font_label,
             colour=C_BTN,
             hover_colour=C_BTN_HOVER
@@ -60,11 +60,11 @@ class LoginScreen(BaseScreen):
         cx, cy = self.W // 2, self.H // 2
 
         # Titre
-        surf_title = self._font_title.render("IDENTIFICATION", True, C_GOLD)
+        surf_title = self._font_title.render("LOGIN", True, C_GOLD)
         blit_centered(self.screen, surf_title, cx, 150)
 
         # Label
-        surf_label = self._font_label.render("Entrez votre nom de joueur :", True, C_WHITE)
+        surf_label = self._font_label.render("Enter your username :", True, C_WHITE)
         blit_centered(self.screen, surf_label, cx, cy - 60)
 
         # Champ de texte (fond)

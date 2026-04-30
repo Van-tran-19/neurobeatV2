@@ -43,7 +43,7 @@ class SplashScreen(BaseScreen):
         blit_centered(self.screen, surf, self.W // 2, self.H // 2 - 60)
 
         # Sous-titre
-        sub = self._font_sub.render("Le blind-test qui réveille tes neurones", True, C_WHITE)
+        sub = self._font_sub.render("The Blindtest of your dream", True, C_WHITE)
         blit_centered(self.screen, sub, self.W // 2, self.H // 2 + 20)
 
         # Staff animé

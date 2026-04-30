@@ -22,7 +22,7 @@ class HomeScreen(BaseScreen):
 
         self._btn_play = Button(
             pygame.Rect(cx - 120, self.H - 160, 240, 60),
-            "COMMENCER",
+            "START",
             self._font_btn,
         )
 
@@ -33,7 +33,7 @@ class HomeScreen(BaseScreen):
 
     def on_enter(self) -> None:
         # Recharge les thèmes à chaque visite (la DB peut avoir été modifiée)
-        self._themes     = ["Tous"] + self.db.get_themes()
+        self._themes     = ["ALL"] + self.db.get_themes()
         self._theme_btns = self._build_theme_buttons()
 
         # Sélection par défaut
@@ -75,7 +75,7 @@ class HomeScreen(BaseScreen):
         for i, btn in enumerate(self._theme_btns):
             if btn.handle_event(event):
                 selected = self._themes[i]
-                self.app.selected_theme = None if selected == "Tous" else selected
+                self.app.selected_theme = None if selected == "ALL" else selected
 
     def update(self, dt: float) -> None:
         self._staff.update(dt)
@@ -86,7 +86,7 @@ class HomeScreen(BaseScreen):
         
         # --- Affichage du profil utilisateur ---
         if self.app.current_user:
-            profile_text = f"Joueur: {self.app.current_user} | Score: {self.app.current_score}"
+            profile_text = f"Player: {self.app.current_user} | Score: {self.app.current_score}"
             surf_profile = self._font_sub.render(profile_text, True, C_WHITE)
             # Affichage en haut à gauche
             self.screen.blit(surf_profile, (20, 20))
@@ -95,11 +95,11 @@ class HomeScreen(BaseScreen):
         surf = self._font_title.render("NEUROBEAT", True, C_GOLD)
         blit_centered(self.screen, surf, self.W // 2, 100)
 
-        sub = self._font_sub.render("Choisis un thème et prouve que tu connais la musique !", True, C_GREY)
+        sub = self._font_sub.render("Choose a theme and prove your music knowledge !", True, C_GREY)
         blit_centered(self.screen, sub, self.W // 2, 180)
 
         # Label thèmes
-        lbl = self._font_sub.render("THÈME", True, C_GOLD)
+        lbl = self._font_sub.render("THEME", True, C_GOLD)
         blit_centered(self.screen, lbl, self.W // 2, self.H // 2 - 10)
 
         # Boutons thème
@@ -107,7 +107,7 @@ class HomeScreen(BaseScreen):
             # Surligne le thème actif
             theme = self._themes[i]
             is_active = (
-                (theme == "Tous" and self.app.selected_theme is None) or
+                (theme == "ALL" and self.app.selected_theme is None) or
                 (theme == self.app.selected_theme)
             )
             if is_active:

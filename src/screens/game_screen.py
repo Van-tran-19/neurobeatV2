@@ -118,13 +118,13 @@ class GameScreen(BaseScreen):
             self._bar.progress = max(0.0, 1.0 - self._timer / PLAY_DURATION)
             if self._timer >= PLAY_DURATION:
                 # Temps écoulé → mauvaise réponse
-                self._show_result(correct=False, guess="(temps écoulé)")
+                self._show_result(correct=False, guess="Time Over")
 
         elif self._state == _STATE_RESULT:
             self._result_timer += dt
             # Retour auto à l'accueil après 4 secondes
             if self._result_timer >= 4.0:
-                self.app.go_to("home")
+                self.app.go_to("Home")
 
     # ── Draw ─────────────────────────────────────────────────────────────────
 
@@ -137,7 +137,7 @@ class GameScreen(BaseScreen):
         
         # --- Affichage du profil utilisateur (HUD) ---
         if self.app.current_user:
-            hud_text = f"Joueur: {self.app.current_user} | Score: {self.app.current_score}"
+            hud_text = f"Player: {self.app.current_user} | Score: {self.app.current_score}"
             surf_hud = self._font_small.render(hud_text, True, C_WHITE)
             self.screen.blit(surf_hud, (20, 20))
 
@@ -226,10 +226,10 @@ class GameScreen(BaseScreen):
         draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
                           border_colour=C_BORDER, border_width=2)
 
-        hint = self._font_big.render("🎵  ÉCOUTEZ BIEN…", True, C_WHITE)
+        hint = self._font_big.render("🎵  Listen Closely", True, C_WHITE)
         blit_centered(self.screen, hint, cx, cy - 50)
 
-        sub = self._font_med.render("Appuyez sur ESPACE pour buzzer !", True, C_GREY)
+        sub = self._font_med.render("Press SPACE to buzz !", True, C_GREY)
         blit_centered(self.screen, sub, cx, cy + 20)
 
         self._bar.draw(self.screen)
@@ -239,10 +239,10 @@ class GameScreen(BaseScreen):
         draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
                           border_colour=C_GOLD, border_width=3)
 
-        lbl = self._font_big.render("🎤  PARLEZ !", True, C_GOLD)
+        lbl = self._font_big.render("🎤  SPEAK !", True, C_GOLD)
         blit_centered(self.screen, lbl, cx, cy - 50)
 
-        sub = self._font_med.render("Dites l'artiste ou le titre…", True, C_GREY)
+        sub = self._font_med.render("Say the artist or the title…", True, C_GREY)
         blit_centered(self.screen, sub, cx, cy + 20)
 
     def _draw_result(self, cx: int, cy: int) -> None:
@@ -251,12 +251,12 @@ class GameScreen(BaseScreen):
         draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
                           border_colour=colour, border_width=3)
 
-        label = "✔  BRAVO !" if self._result_ok else "✘  DOMMAGE…"
+        label = "✔  WELL DONEEEEEEEEE !" if self._result_ok else "✘  SHIET…"
         surf = self._font_big.render(label, True, colour)
         blit_centered(self.screen, surf, cx, cy - 80)
 
         # Réponse du joueur
-        guess_lbl = self._font_small.render(f"Vous avez dit : « {self._guess} »", True, C_GREY)
+        guess_lbl = self._font_small.render(f"You say : « {self._guess} »", True, C_GREY)
         blit_centered(self.screen, guess_lbl, cx, cy - 20)
 
         # La vraie réponse
@@ -264,7 +264,7 @@ class GameScreen(BaseScreen):
         answer_surf = self._font_med.render(answer_str, True, C_WHITE)
         blit_centered(self.screen, answer_surf, cx, cy + 20)
 
-        hint = self._font_small.render("Entrée → rejouer   |   bouton Accueil → menu", True, C_GREY)
+        hint = self._font_small.render("Enter → play again   |   home button → menu", True, C_GREY)
         blit_centered(self.screen, hint, cx, cy + 70)
 
         self._btn_home.draw(self.screen)
@@ -274,10 +274,10 @@ class GameScreen(BaseScreen):
         draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
                           border_colour=C_FAIL, border_width=2)
 
-        lbl = self._font_big.render("Aucune chanson disponible", True, C_FAIL)
+        lbl = self._font_big.render("Any song available", True, C_FAIL)
         blit_centered(self.screen, lbl, cx, cy - 30)
 
-        sub = self._font_med.render("Ajoutez des chansons avec tests/init_data.py", True, C_GREY)
+        sub = self._font_med.render("Add songs with tests/init_data.py", True, C_GREY)
         blit_centered(self.screen, sub, cx, cy + 30)
 
         self._btn_home.draw(self.screen)

@@ -35,7 +35,7 @@ class App:
         self.current_score = 0
 
         # Moteur de jeu (STT + validation) partagé entre tous les screens
-        self.engine: GameEngine = GameEngine(language="fr")
+        self.engine: GameEngine = GameEngine(language="en")
 
         # Thème sélectionné sur le home screen (None = tous les thèmes)
         self.selected_theme: str | None = None
