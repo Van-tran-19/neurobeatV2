@@ -71,12 +71,18 @@ class GameScreen(BaseScreen):
         self._result_timer = 0.0
         self._guess        = ""
 
-        # Charge une chanson selon le thème sélectionné
-        self._song = self.db.get_random_song(theme=self.app.selected_theme)
+        last_song_id = getattr(self.app, 'last_song_id', None)
+
+        self._song = self.db.get_random_song(
+            theme=self.app.selected_theme, 
+            exclude_id=last_song_id
+        )
 
         if not self._song:
             self._state = _STATE_NO_SONG
             return
+
+        self.app.last_song_id = self._song["id"]
 
         # Lance la musique
         try:

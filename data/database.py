@@ -79,14 +79,39 @@ class DatabaseManager:
     # --- MÉTHODES POUR LES CHANSONS ---
 
     def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1):
-        """Ajoute une chanson à la bibliothèque avec son genre."""
+        """Ajoute une chanson uniquement si elle n'existe pas déjà, en normalisant le thème."""
+        
+        # 1. NETTOYAGE DU THÈME (enlève les espaces autour et met tout en majuscules)
+        clean_kind = kind.strip().upper()
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            
+            # Vérifier si le fichier existe déjà dans la base
+            cursor.execute('SELECT id FROM songs WHERE filename = ?', (filename,))
+            if cursor.fetchone():
+                print(f"⏸ Ignoré : {title} (déjà dans la base)")
+                return
+
+            # Si elle n'existe pas, on l'ajoute avec le thème nettoyé (clean_kind)
             cursor.execute('''
                 INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (filename, artist, title, phonetic_answers, kind, difficulty))
+            ''', (filename, artist, title, phonetic_answers, clean_kind, difficulty))
             conn.commit()
+            print(f"✅ Ajouté : {title} dans le thème {clean_kind}")
+            
+    def normalize_existing_themes(self):
+        """Met à jour tous les thèmes existants dans la DB pour qu'ils soient uniformes."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # On met tout en majuscules (UPPER) et on enlève les espaces (TRIM)
+            cursor.execute('''
+                UPDATE songs 
+                SET kind = UPPER(TRIM(kind))
+            ''')
+            conn.commit()
+            print("🧹 Base de données nettoyée : Les thèmes sont maintenant fusionnés !")
 
     def get_random_song(self, theme=None):
         """Récupère une chanson au hasard, optionnellement filtrée par thème."""
@@ -99,6 +124,24 @@ class DatabaseManager:
             
             row = cursor.fetchone()
             return dict(row) if row else None
+        
+    def remove_duplicates(self):
+        """Supprime tous les doublons de la table songs (basé sur le nom du fichier)."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # Supprime les lignes dont l'ID n'est pas le plus petit ID pour ce nom de fichier
+            cursor.execute('''
+                DELETE FROM songs 
+                WHERE id NOT IN (
+                    SELECT MIN(id) 
+                    FROM songs 
+                    GROUP BY filename
+                )
+            ''')
+            doublons_supprimes = cursor.rowcount
+            conn.commit()
+            if doublons_supprimes > 0:
+                print(f"🧹 Nettoyage : {doublons_supprimes} doublon(s) supprimé(s).")
 
     def get_themes(self):
         """Récupère la liste unique des thèmes/genres disponibles en base."""
@@ -148,3 +191,26 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM profiles WHERE username = ?", (username,))
             return cursor.fetchone()
+        
+    def get_random_song(self, theme=None, exclude_id=None):
+        """Récupère une chanson au hasard, en excluant la précédente pour éviter les répétitions."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            query = 'SELECT * FROM songs WHERE 1=1'
+            params = []
+
+            # Filtrer par thème si ce n'est pas "Tous" / "All"
+            if theme and theme != "All" and theme != "Tous":
+                query += ' AND kind = ?'
+                params.append(theme)
+
+            # Exclure la musique qui vient juste de passer
+            if exclude_id is not None:
+                query += ' AND id != ?'
+                params.append(exclude_id)
+
+            query += ' ORDER BY RANDOM() LIMIT 1'
+            
+            cursor.execute(query, tuple(params))
+            row = cursor.fetchone()
+            return dict(row) if row else None

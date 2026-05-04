@@ -81,21 +81,6 @@ class App:
         self._active_key: str = "splash"
         self._active = self._screens["splash"]
         self._active.on_enter()
-
-    def run(self) -> None:
-        """Main game loop."""
-        while True:
-            dt = self.clock.tick(FPS) / 1000.0   # seconds since last frame
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    raise SystemExit
-                self._active.handle_event(event)
-
-            self._active.update(dt)
-            self._active.draw()
-            pygame.display.flip()
             
     def login(self, name):
         # Logic to set the current active profile

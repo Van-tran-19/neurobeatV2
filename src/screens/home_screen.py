@@ -123,3 +123,36 @@ class HomeScreen(BaseScreen):
 
         # Staff animé en bas
         self._staff.draw()
+        
+    def _build_theme_buttons(self) -> list[Button]:
+        """Crée un bouton par thème, répartis sur plusieurs lignes centrées."""
+        btns   = []
+        btn_w  = 140
+        btn_h  = 40
+        gap_x  = 12
+        gap_y  = 15
+        max_per_row = 6 # Nombre maximum de boutons par ligne avant de passer à la suite
+
+        # Position Y de départ pour les boutons
+        base_y = self.H // 2 + 10
+
+        # Diviser la liste complète des thèmes en plusieurs lignes (chunks)
+        rows = [self._themes[i:i + max_per_row] for i in range(0, len(self._themes), max_per_row)]
+
+        for row_idx, row_themes in enumerate(rows):
+            # Calculer la largeur totale de cette ligne spécifique pour bien la centrer
+            total_w = len(row_themes) * btn_w + (len(row_themes) - 1) * gap_x
+            start_x = self.W // 2 - total_w // 2
+            current_y = base_y + row_idx * (btn_h + gap_y)
+
+            for col_idx, theme in enumerate(row_themes):
+                x = start_x + col_idx * (btn_w + gap_x)
+                btns.append(Button(
+                    pygame.Rect(x, current_y, btn_w, btn_h),
+                    theme.upper(),
+                    self._font_theme,
+                    colour=C_PANEL,
+                    hover_colour=C_BTN_HOVER,
+                    border_colour=C_BORDER,
+                ))
+        return btns
