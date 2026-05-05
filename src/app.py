@@ -16,6 +16,7 @@ from src.screens.splash_screen import SplashScreen
 from src.screens.home_screen import HomeScreen
 from src.screens.game_screen import GameScreen
 from src.screens.login_screen import LoginScreen
+from src.screens.leaderboard_screen import LeaderboardScreen
 AUDIO_PATH = os.path.join(sys.path[0], "assets", "audio")
 
 class App:
@@ -46,6 +47,7 @@ class App:
             "login":  LoginScreen(self),
             "home":   HomeScreen(self),
             "game":   GameScreen(self),
+            "leaderboard": LeaderboardScreen(self),
         }
 
         # Démarrage sur le splash
@@ -61,6 +63,24 @@ class App:
         self._active_key = key
         self._active     = self._screens[key]
         self._active.on_enter()
+        
+    def login(self, name: str) -> None:
+        """Connecte l'utilisateur et récupère son score."""
+        self.current_user = name
+        
+        # 1. On nettoie la base de données des éventuels doublons AVANT de charger
+        self.db.clean_duplicate_profiles()
+        
+        # 2. On récupère le profil (qui est maintenant garanti d'être unique)
+        profile = self.db.get_profile(name)
+        
+        if profile:
+            self.current_score = profile['total_score']
+        else:
+            self.current_score = 0
+            self.db.save_score(name, 0) # Crée le nouvel utilisateur s'il n'existe pas
+            
+        print(f"Logged in as: {self.current_user} | Score: {self.current_score}")
 
     def run(self) -> None:
         """Boucle principale."""
@@ -81,8 +101,3 @@ class App:
         self._active_key: str = "splash"
         self._active = self._screens["splash"]
         self._active.on_enter()
-            
-    def login(self, name):
-        # Logic to set the current active profile
-        self.current_user = name
-        print(f"Logged in as: {self.current_user}")

@@ -214,3 +214,41 @@ class DatabaseManager:
             cursor.execute(query, tuple(params))
             row = cursor.fetchone()
             return dict(row) if row else None
+        
+    def get_top_profiles(self, limit=5):
+        """Fetch the top players ordered by total score."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT username, total_score 
+                FROM profiles 
+                ORDER BY total_score DESC 
+                LIMIT ?
+            ''', (limit,))
+            # Convert rows to dictionaries so they are easy to use in the UI
+            return [dict(row) for row in cursor.fetchall()]
+        
+    def clean_duplicate_profiles(self):
+        """Supprime les pseudos en double et garde uniquement celui avec le meilleur score."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Cette requête SQL trouve le meilleur score pour chaque pseudo 
+            # et supprime toutes les autres lignes correspondantes.
+            cursor.execute('''
+                DELETE FROM profiles 
+                WHERE user_id NOT IN (
+                    SELECT user_id 
+                    FROM (
+                        SELECT user_id, MAX(total_score) 
+                        FROM profiles 
+                        GROUP BY username
+                    )
+                )
+            ''')
+            
+            doublons_supprimes = cursor.rowcount
+            conn.commit()
+            
+            if doublons_supprimes > 0:
+                print(f"🧹 Nettoyage : {doublons_supprimes} profil(s) fantôme(s) supprimé(s).")

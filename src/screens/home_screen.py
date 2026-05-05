@@ -25,6 +25,12 @@ class HomeScreen(BaseScreen):
             "START",
             self._font_btn,
         )
+        
+        self._btn_leaderboard = Button(
+            pygame.Rect(cx - 120, self.H - 110, 240, 50), # Placed slightly lower
+            "LEADERBOARD",
+            self._font_btn,
+        )
 
         # Boutons thème (générés dynamiquement depuis la DB)
         self._themes:      list[str]   = []
@@ -71,6 +77,9 @@ class HomeScreen(BaseScreen):
 
         if self._btn_play.handle_event(event):
             self.app.go_to("game")
+        
+        if self._btn_leaderboard.handle_event(event):
+            self.app.go_to("leaderboard")
 
         for i, btn in enumerate(self._theme_btns):
             if btn.handle_event(event):
@@ -119,10 +128,12 @@ class HomeScreen(BaseScreen):
             btn.draw(self.screen)
 
         # Bouton jouer
+        self._staff.draw()
+
         self._btn_play.draw(self.screen)
+        self._btn_leaderboard.draw(self.screen)
 
         # Staff animé en bas
-        self._staff.draw()
         
     def _build_theme_buttons(self) -> list[Button]:
         """Crée un bouton par thème, répartis sur plusieurs lignes centrées."""

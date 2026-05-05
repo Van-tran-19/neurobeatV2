@@ -169,6 +169,17 @@ class GameScreen(BaseScreen):
         self._result_timer = 0.0
         self._state        = _STATE_RESULT
 
+        # --- SEND SCORE TO DATABASE ---
+        if correct and self.app.current_user:
+            # 1. Add 100 points for a correct answer
+            self.app.db.save_score(self.app.current_user, 100) 
+            
+            # 2. Fetch the newly updated profile
+            profile = self.app.db.get_profile(self.app.current_user)
+            if profile:
+                # 3. Update the app's current score (MUST use the string key 'total_score')
+                self.app.current_score = profile['total_score']
+
         # --- Sauvegarde du score si la réponse est correcte ---
         if correct and self.app.current_user:
             # On ajoute 100 points pour une bonne réponse (par exemple)
@@ -201,13 +212,6 @@ class GameScreen(BaseScreen):
             pygame.USEREVENT,
             {"action": "stt_done", "guess": guess, "correct": correct},
         ))
-
-    def _show_result(self, correct: bool, guess: str) -> None:
-        pygame.mixer.music.stop()
-        self._result_ok    = correct
-        self._guess        = guess
-        self._result_timer = 0.0
-        self._state        = _STATE_RESULT
 
     # On intercepte aussi les USEREVENT pour récupérer le résultat STT
     def handle_event(self, event: pygame.event.Event) -> None:  # noqa: F811
