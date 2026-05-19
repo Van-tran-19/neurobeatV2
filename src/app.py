@@ -17,6 +17,7 @@ from src.screens.home_screen import HomeScreen
 from src.screens.game_screen import GameScreen
 from src.screens.login_screen import LoginScreen
 from src.screens.leaderboard_screen import LeaderboardScreen
+from src.screens.stats_screen import StatsScreen
 AUDIO_PATH = os.path.join(sys.path[0], "assets", "audio")
 
 class App:
@@ -34,6 +35,7 @@ class App:
         self.db: DatabaseManager = DatabaseManager()
         self.current_user = None
         self.current_score = 0
+        self.session_id = None
 
         # Moteur de jeu (STT + validation) partagé entre tous les screens
         self.engine: GameEngine = GameEngine(language="en")
@@ -48,6 +50,7 @@ class App:
             "home":   HomeScreen(self),
             "game":   GameScreen(self),
             "leaderboard": LeaderboardScreen(self),
+            "stats":  StatsScreen(self),
         }
 
         # Démarrage sur le splash

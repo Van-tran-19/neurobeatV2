@@ -188,6 +188,24 @@ class GameScreen(BaseScreen):
             profile = self.app.db.get_profile(self.app.current_user)
             if profile:
                self.app.current_score = profile[2]
+               
+        # --- ENREGISTREMENT DU LOG COGNITIF ---
+        if self.app.session_id and self._song:
+            # Transformation du chrono (secondes) en millisecondes
+            reaction_ms = self._timer * 1000.0
+            self.db.log_reaction(
+                session_id=self.app.session_id,
+                song_id=self._song["id"],
+                reaction_time_ms=reaction_ms,
+                was_correct=correct
+            )
+
+        # --- ENVOI DU SCORE À LA BASE DE DONNÉES ---
+        if correct and self.app.current_user:
+            self.app.db.save_score(self.app.current_user, 100) 
+            profile = self.app.db.get_profile(self.app.current_user)
+            if profile:
+                self.app.current_score = profile['total_score']
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
@@ -228,6 +246,14 @@ class GameScreen(BaseScreen):
                 self.app.go_to("home")
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 self.app.go_to("game")
+        
+        if self._state == _STATE_NO_SONG:
+            # Permet de cliquer sur le bouton
+            if self._btn_home.handle_event(event):
+                self.app.go_to("home")
+            # Permet aussi de quitter avec la touche Échap ou Entrée
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_RETURN):
+                self.app.go_to("home")
 
     # ── Draw sub-states ───────────────────────────────────────────────────────
 

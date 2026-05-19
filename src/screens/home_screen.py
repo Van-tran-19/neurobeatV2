@@ -17,19 +17,27 @@ class HomeScreen(BaseScreen):
         self._font_sub    = pygame.font.SysFont("Arial", 20)
         self._font_btn    = pygame.font.SysFont("Arial", 26, bold=True)
         self._font_theme  = pygame.font.SysFont("Arial", 18)
+        self._font_small = pygame.font.SysFont("Arial", 18)
 
         cx = self.W // 2
 
         self._btn_play = Button(
-            pygame.Rect(cx - 120, self.H - 160, 240, 60),
+            pygame.Rect(cx - 120, self.H - 180, 240, 60),
             "START",
             self._font_btn,
         )
         
         self._btn_leaderboard = Button(
-            pygame.Rect(cx - 120, self.H - 110, 240, 50), # Placed slightly lower
+            pygame.Rect(cx - 120, self.H - 130, 240, 50), # Placed slightly lower
             "LEADERBOARD",
             self._font_btn,
+        )
+        self._btn_stats = Button(
+            pygame.Rect(cx - 120, self.H - 80, 240, 44), # Ajustez les coordonnées si besoin
+            "STATISTICS",
+            self._font_btn,
+            colour=C_BTN,
+            hover_colour=C_BTN_HOVER,
         )
 
         # Boutons thème (générés dynamiquement depuis la DB)
@@ -80,6 +88,9 @@ class HomeScreen(BaseScreen):
         
         if self._btn_leaderboard.handle_event(event):
             self.app.go_to("leaderboard")
+            
+        if self._btn_stats.handle_event(event):
+            self.app.go_to("stats")
 
         for i, btn in enumerate(self._theme_btns):
             if btn.handle_event(event):
@@ -129,9 +140,9 @@ class HomeScreen(BaseScreen):
 
         # Bouton jouer
         self._staff.draw()
-
         self._btn_play.draw(self.screen)
         self._btn_leaderboard.draw(self.screen)
+        self._btn_stats.draw(self.screen)
 
         # Staff animé en bas
         

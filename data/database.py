@@ -201,7 +201,7 @@ class DatabaseManager:
             params = []
 
             # Filtrer par thème si ce n'est pas "Tous" / "All"
-            if theme and theme != "All" and theme != "Tous":
+            if theme and theme != "ALL" and theme != "Tous":
                 query += ' AND kind = ?'
                 params.append(theme)
 
@@ -253,3 +253,20 @@ class DatabaseManager:
             
             if doublons_supprimes > 0:
                 print(f"🧹 Nettoyage : {doublons_supprimes} profil(s) fantôme(s) supprimé(s).")
+                
+    def get_user_stats(self, username):
+        """Calcule et récupère les statistiques cognitives globales pour un joueur."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT 
+                    COUNT(r.id) as total_played,
+                    AVG(CASE WHEN r.was_correct = 1 THEN r.reaction_time_ms END) as avg_reaction_correct,
+                    AVG(r.reaction_time_ms) as avg_reaction_total,
+                    SUM(CASE WHEN r.was_correct = 1 THEN 1 ELSE 0 END) as total_correct
+                FROM reaction_logs r
+                JOIN sessions s ON r.session_id = s.id
+                WHERE s.player_name = ?
+            ''', (username,))
+            row = cursor.fetchone()
+            return dict(row) if row and row['total_played'] > 0 else None
