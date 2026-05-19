@@ -39,7 +39,8 @@ class DatabaseManager:
                     title TEXT NOT NULL,
                     phonetic_answers TEXT,
                     kind TEXT DEFAULT 'Général',
-                    difficulty INTEGER DEFAULT 1
+                    difficulty INTEGER DEFAULT 1,
+                    anecdote TEXT DEFAULT ''
                 )
             ''')
             
@@ -78,7 +79,7 @@ class DatabaseManager:
 
     # --- MÉTHODES POUR LES CHANSONS ---
 
-    def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1):
+    def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1, anecdote=""):
         """Ajoute une chanson uniquement si elle n'existe pas déjà, en normalisant le thème."""
         
         # 1. NETTOYAGE DU THÈME (enlève les espaces autour et met tout en majuscules)
@@ -95,9 +96,9 @@ class DatabaseManager:
 
             # Si elle n'existe pas, on l'ajoute avec le thème nettoyé (clean_kind)
             cursor.execute('''
-                INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (filename, artist, title, phonetic_answers, clean_kind, difficulty))
+                INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty, anecdote)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (filename, artist, title, phonetic_answers, clean_kind, difficulty, anecdote))
             conn.commit()
             print(f"✅ Ajouté : {title} dans le thème {clean_kind}")
             

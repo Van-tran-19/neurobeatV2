@@ -47,7 +47,7 @@ class GameScreen(BaseScreen):
 
         self._btn_home = Button(
             pygame.Rect(cx - 80, cy + 175, 160, 44),
-            "ACCUEIL",
+            "HOME",
             self._font_small,
             colour=C_BTN,
             hover_colour=C_BTN_HOVER,
@@ -129,8 +129,8 @@ class GameScreen(BaseScreen):
         elif self._state == _STATE_RESULT:
             self._result_timer += dt
             # Retour auto à l'accueil après 4 secondes
-            if self._result_timer >= 4.0:
-                self.app.go_to("Home")
+            if self._result_timer >= 20.0:
+                self.app.go_to("home")
 
     # ── Draw ─────────────────────────────────────────────────────────────────
 
@@ -261,21 +261,51 @@ class GameScreen(BaseScreen):
         draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
                           border_colour=colour, border_width=3)
 
-        label = "✔  WELL DONEEEEEEEEE !" if self._result_ok else "✘  SHIET…"
+        label = "✔  WELL DONEEEEEEEEE !" if self._result_ok else "✘  TIME OVER / SHIET…"
         surf = self._font_big.render(label, True, colour)
         blit_centered(self.screen, surf, cx, cy - 80)
 
         # Réponse du joueur
         guess_lbl = self._font_small.render(f"You say : « {self._guess} »", True, C_GREY)
-        blit_centered(self.screen, guess_lbl, cx, cy - 20)
+        blit_centered(self.screen, guess_lbl, cx, cy - 30)
 
         # La vraie réponse
         answer_str = f"{self._song['artist']}  —  {self._song['title']}"
         answer_surf = self._font_med.render(answer_str, True, C_WHITE)
-        blit_centered(self.screen, answer_surf, cx, cy + 20)
+        blit_centered(self.screen, answer_surf, cx, cy + 10)
 
+        # On utilise .get() pour éviter un crash si l'anecdote est manquante
+        anecdote_text = self._song.get('anecdote', "")
+        if not anecdote_text:
+            anecdote_text = "No fun fact available"
+            
+        # Le panneau fait 640px de large, on limite le texte à 580px pour garder une marge
+        max_width = 580 
+        words = anecdote_text.split(' ')
+        lines = []
+        current_line = ""
+
+        # Découpage du texte en plusieurs lignes
+        for word in words:
+            test_line = current_line + word + " "
+            # self._font_med.size(text)[0] renvoie la largeur en pixels du texte
+            if self._font_med.size(test_line)[0] < max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word + " "
+        lines.append(current_line) # On n'oublie pas d'ajouter la toute dernière ligne
+
+        # Affichage ligne par ligne
+        y_offset = cy + 55  # Position de départ de l'anecdote
+        for line in lines:
+            line_surf = self._font_med.render(line.strip(), True, C_GOLD)
+            blit_centered(self.screen, line_surf, cx, y_offset)
+            y_offset += 28  # On descend de 28 pixels à chaque nouvelle ligne
+
+        # On positionne l'indice (hint) dynamiquement en dessous de la dernière ligne
         hint = self._font_small.render("Enter → play again   |   home button → menu", True, C_GREY)
-        blit_centered(self.screen, hint, cx, cy + 70)
+        blit_centered(self.screen, hint, cx, y_offset + 20)
 
         self._btn_home.draw(self.screen)
 
@@ -287,7 +317,7 @@ class GameScreen(BaseScreen):
         lbl = self._font_big.render("Any song available", True, C_FAIL)
         blit_centered(self.screen, lbl, cx, cy - 30)
 
-        sub = self._font_med.render("Add songs with tests/init_data.py", True, C_GREY)
+        sub = self._font_med.render("Ask us if you want any other songs", True, C_GREY)
         blit_centered(self.screen, sub, cx, cy + 30)
 
         self._btn_home.draw(self.screen)
