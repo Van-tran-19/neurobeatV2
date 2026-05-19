@@ -222,13 +222,12 @@ class GameScreen(BaseScreen):
         self._stt_thread.start()
 
     def _run_stt(self, expected_words: list[str]) -> None:
-        """Tourne dans un thread séparé pour ne pas geler le rendu."""
-        guess = self.engine.recognize_speech(expected_words)
-        correct = self.engine.check_answer(guess, self._song)
-        # Retour dans le thread principal via un event pygame custom
+        guess = self.engine.recognize_speech(None)  # ← None = vocabulaire libre
+        is_correct, score = self.engine.check_answer(guess, self._song)  # ← déstructure le tuple
+        print(f"[STT] Transcription : '{guess}' | Score : {score:.2f}")
         pygame.event.post(pygame.event.Event(
             pygame.USEREVENT,
-            {"action": "stt_done", "guess": guess, "correct": correct},
+            {"action": "stt_done", "guess": guess, "correct": is_correct},  # ← bool seulement
         ))
 
     # On intercepte aussi les USEREVENT pour récupérer le résultat STT
