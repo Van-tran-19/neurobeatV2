@@ -1,6 +1,6 @@
 """
 NeuroBeat — Home screen.
-Affiche le titre, un sélecteur de thème et le bouton COMMENCER.
+Affiche le titre, un sélecteur de thème (carrousel) et le bouton COMMENCER.
 """
 
 from __future__ import annotations
@@ -16,86 +16,125 @@ class HomeScreen(BaseScreen):
         self._font_title  = pygame.font.SysFont("Arial", 62, bold=True)
         self._font_sub    = pygame.font.SysFont("Arial", 20)
         self._font_btn    = pygame.font.SysFont("Arial", 26, bold=True)
-        self._font_theme  = pygame.font.SysFont("Arial", 18)
-        self._font_small = pygame.font.SysFont("Arial", 18)
+        self._font_theme  = pygame.font.SysFont("Arial", 22, bold=True)  # légèrement plus grand
+        self._font_small  = pygame.font.SysFont("Arial", 18)
 
         cx = self.W // 2
 
+        # --- Boutons d'action ---
         self._btn_play = Button(
             pygame.Rect(cx - 120, self.H - 180, 240, 60),
             "START",
             self._font_btn,
         )
-        
         self._btn_leaderboard = Button(
-            pygame.Rect(cx - 120, self.H - 130, 240, 50), # Placed slightly lower
+            pygame.Rect(cx - 120, self.H - 130, 240, 50),
             "LEADERBOARD",
             self._font_btn,
         )
         self._btn_stats = Button(
-            pygame.Rect(cx - 120, self.H - 80, 240, 44), # Ajustez les coordonnées si besoin
+            pygame.Rect(cx - 120, self.H - 80, 240, 44),
             "STATISTICS",
             self._font_btn,
             colour=C_BTN,
             hover_colour=C_BTN_HOVER,
         )
 
-        # Boutons thème (générés dynamiquement depuis la DB)
-        self._themes:      list[str]   = []
-        self._theme_btns:  list[Button] = []
+        # --- Carrousel : boutons fléchés gauche / droite ---
+        arrow_y    = self.H // 2 + 10      # même zone verticale qu'avant
+        arrow_size = 44
+
+        self._btn_prev = Button(
+            pygame.Rect(cx - 200, arrow_y, arrow_size, arrow_size),
+            "◀",
+            self._font_btn,
+            colour=C_PANEL,
+            hover_colour=C_BTN_HOVER,
+            border_colour=C_BORDER,
+        )
+        self._btn_next = Button(
+            pygame.Rect(cx + 200 - arrow_size, arrow_y, arrow_size, arrow_size),
+            "▶",
+            self._font_btn,
+            colour=C_PANEL,
+            hover_colour=C_BTN_HOVER,
+            border_colour=C_BORDER,
+        )
+
+        # Rectangle de la "vitrine" du thème sélectionné (centré entre les deux flèches)
+        self._theme_rect = pygame.Rect(cx - 140, arrow_y, 280, arrow_size)
+
+        # Liste des thèmes et index courant
+        self._themes: list[str] = []
+        self._theme_index: int  = 0
+
         self._staff = MusicStaff(self.screen, 60, self.H - 60, self.W - 120, amplitude=18)
 
-    def on_enter(self) -> None:
-        # Recharge les thèmes à chaque visite (la DB peut avoir été modifiée)
-        self._themes     = ["ALL"] + self.db.get_themes()
-        self._theme_btns = self._build_theme_buttons()
+    # ------------------------------------------------------------------
+    # Cycle de vie
+    # ------------------------------------------------------------------
 
-        # Sélection par défaut
-        if self.app.selected_theme not in self._themes:
-            self.app.selected_theme = self._themes[0]
+    def on_enter(self) -> None:
+        self._themes = ["ALL"] + self.db.get_themes()
+
+        # Retrouve l'index correspondant au thème mémorisé dans app
+        current = self.app.selected_theme or "ALL"
+        if current in self._themes:
+            self._theme_index = self._themes.index(current)
+        else:
+            self._theme_index = 0
+
+        self._sync_app_theme()
 
     def on_exit(self) -> None:
         pass
 
-    def _build_theme_buttons(self) -> list[Button]:
-        """Crée un bouton par thème, centrés horizontalement."""
-        btns   = []
-        btn_w  = 140
-        btn_h  = 40
-        gap    = 12
-        total  = len(self._themes) * btn_w + (len(self._themes) - 1) * gap
-        start_x = self.W // 2 - total // 2
-        y       = self.H // 2 + 30
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
 
-        for i, theme in enumerate(self._themes):
-            x = start_x + i * (btn_w + gap)
-            btns.append(Button(
-                pygame.Rect(x, y, btn_w, btn_h),
-                theme.upper(),
-                self._font_theme,
-                colour=C_PANEL,
-                hover_colour=C_BTN_HOVER,
-                border_colour=C_BORDER,
-            ))
-        return btns
+    def _sync_app_theme(self) -> None:
+        """Met à jour app.selected_theme depuis l'index courant."""
+        selected = self._themes[self._theme_index]
+        self.app.selected_theme = None if selected == "ALL" else selected
+
+    def _prev_theme(self) -> None:
+        self._theme_index = (self._theme_index - 1) % len(self._themes)
+        self._sync_app_theme()
+
+    def _next_theme(self) -> None:
+        self._theme_index = (self._theme_index + 1) % len(self._themes)
+        self._sync_app_theme()
+
+    # ------------------------------------------------------------------
+    # Gestion des événements
+    # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.app.go_to("game")
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.app.go_to("game")
+            elif event.key == pygame.K_LEFT:
+                self._prev_theme()
+            elif event.key == pygame.K_RIGHT:
+                self._next_theme()
 
         if self._btn_play.handle_event(event):
             self.app.go_to("game")
-        
         if self._btn_leaderboard.handle_event(event):
             self.app.go_to("leaderboard")
-            
         if self._btn_stats.handle_event(event):
             self.app.go_to("stats")
 
-        for i, btn in enumerate(self._theme_btns):
-            if btn.handle_event(event):
-                selected = self._themes[i]
-                self.app.selected_theme = None if selected == "ALL" else selected
+        # Flèches du carrousel
+        if self._btn_prev.handle_event(event):
+            self._prev_theme()
+        if self._btn_next.handle_event(event):
+            self._next_theme()
+
+    # ------------------------------------------------------------------
+    # Update / Draw
+    # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
         self._staff.update(dt)
@@ -103,12 +142,11 @@ class HomeScreen(BaseScreen):
     def draw(self) -> None:
         self.screen.fill(C_BG)
         self._draw_dot_grid()
-        
-        # --- Affichage du profil utilisateur ---
+
+        # Profil utilisateur
         if self.app.current_user:
             profile_text = f"Player: {self.app.current_user} | Score: {self.app.current_score}"
             surf_profile = self._font_sub.render(profile_text, True, C_WHITE)
-            # Affichage en haut à gauche
             self.screen.blit(surf_profile, (20, 20))
 
         # Titre
@@ -118,63 +156,53 @@ class HomeScreen(BaseScreen):
         sub = self._font_sub.render("Choose a theme and prove your music knowledge !", True, C_GREY)
         blit_centered(self.screen, sub, self.W // 2, 180)
 
-        # Label thèmes
+        # Label "THEME"
         lbl = self._font_sub.render("THEME", True, C_GOLD)
         blit_centered(self.screen, lbl, self.W // 2, self.H // 2 - 10)
 
-        # Boutons thème
-        for i, btn in enumerate(self._theme_btns):
-            # Surligne le thème actif
-            theme = self._themes[i]
-            is_active = (
-                (theme == "ALL" and self.app.selected_theme is None) or
-                (theme == self.app.selected_theme)
-            )
-            if is_active:
-                # Bordure or plus épaisse pour le thème actif
-                draw_rounded_rect(
-                    self.screen, C_GOLD,
-                    btn.rect.inflate(4, 4), 12,
-                )
-            btn.draw(self.screen)
+        # --- Carrousel ---
+        self._draw_carousel()
 
-        # Bouton jouer
+        # Boutons d'action + staff
         self._staff.draw()
         self._btn_play.draw(self.screen)
         self._btn_leaderboard.draw(self.screen)
         self._btn_stats.draw(self.screen)
 
-        # Staff animé en bas
-        
-    def _build_theme_buttons(self) -> list[Button]:
-        """Crée un bouton par thème, répartis sur plusieurs lignes centrées."""
-        btns   = []
-        btn_w  = 140
-        btn_h  = 40
-        gap_x  = 12
-        gap_y  = 15
-        max_per_row = 6 # Nombre maximum de boutons par ligne avant de passer à la suite
+    def _draw_carousel(self) -> None:
+        """Dessine la vitrine du thème courant + les deux flèches."""
+        if not self._themes:
+            return
 
-        # Position Y de départ pour les boutons
-        base_y = self.H // 2 + 10
+        # Fond doré (bordure active) derrière la vitrine
+        draw_rounded_rect(
+            self.screen, C_GOLD,
+            self._theme_rect.inflate(4, 4), 12,
+        )
+        # Fond intérieur
+        draw_rounded_rect(
+            self.screen, C_PANEL,
+            self._theme_rect, 10,
+        )
 
-        # Diviser la liste complète des thèmes en plusieurs lignes (chunks)
-        rows = [self._themes[i:i + max_per_row] for i in range(0, len(self._themes), max_per_row)]
+        # Texte du thème courant
+        label = self._themes[self._theme_index].upper()
+        surf  = self._font_theme.render(label, True, C_GOLD)
+        blit_centered(
+            self.screen, surf,
+            self._theme_rect.centerx,
+            self._theme_rect.centery,
+        )
 
-        for row_idx, row_themes in enumerate(rows):
-            # Calculer la largeur totale de cette ligne spécifique pour bien la centrer
-            total_w = len(row_themes) * btn_w + (len(row_themes) - 1) * gap_x
-            start_x = self.W // 2 - total_w // 2
-            current_y = base_y + row_idx * (btn_h + gap_y)
+        # Indicateur de position  ex: "2 / 5"
+        indicator = f"{self._theme_index + 1} / {len(self._themes)}"
+        surf_ind  = self._font_small.render(indicator, True, C_GREY)
+        blit_centered(
+            self.screen, surf_ind,
+            self._theme_rect.centerx,
+            self._theme_rect.bottom + 16,
+        )
 
-            for col_idx, theme in enumerate(row_themes):
-                x = start_x + col_idx * (btn_w + gap_x)
-                btns.append(Button(
-                    pygame.Rect(x, current_y, btn_w, btn_h),
-                    theme.upper(),
-                    self._font_theme,
-                    colour=C_PANEL,
-                    hover_colour=C_BTN_HOVER,
-                    border_colour=C_BORDER,
-                ))
-        return btns
+        # Flèches
+        self._btn_prev.draw(self.screen)
+        self._btn_next.draw(self.screen)
