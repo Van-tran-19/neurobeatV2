@@ -210,10 +210,20 @@ class GameScreen(BaseScreen):
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _buzz(self) -> None:
-        """Le joueur appuie sur ESPACE : on pause la musique et on écoute."""
         pygame.mixer.music.pause()
         self._state = _STATE_LISTENING
-        expected    = self.engine.build_expected_words(self._song)
+
+        # Détecte la langue de la chanson
+        lang = "fr"  # défaut
+        if self._song.get("language") == "en":
+            lang = "en"
+        elif self.app.selected_theme and self.app.selected_theme.lower() in {"rock", "electro", "pop"}:
+            lang = "en"  # fallback par thème
+
+        # Met à jour le modèle dans le moteur
+        self.engine.set_language(lang)
+
+        expected = self.engine.build_expected_words(self._song)
         self._stt_thread = threading.Thread(
             target=self._run_stt,
             args=(expected,),

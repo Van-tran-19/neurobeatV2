@@ -87,18 +87,20 @@ class GameEngine:
         return live_transcribe_optimized(self.model_path, expected_words)
 
     def check_answer(self, user_input: str, song_data: dict) -> tuple[bool, float]:
-        """
-        Compare l'input utilisateur aux réponses phonétiques acceptées (DB).
-        Tolère les fautes, accents, ordre des mots et correspondances partielles.
-
-        Returns:
-            (is_correct: bool, best_score: float)  — score entre 0.0 et 1.0
-        """
-        raw_answers   = song_data.get("phonetic_answers", "") or ""
-        valid_answers = [a.strip() for a in raw_answers.split(",") if a.strip()]
-
-        if not user_input or not valid_answers:
+        if not user_input:
             return False, 0.0
+
+        # Construit toutes les réponses acceptables
+        raw = song_data.get("phonetic_answers", "") or ""
+        valid_answers = [a.strip() for a in raw.split(",") if a.strip()]
+
+        if song_data.get("artist"):
+            valid_answers.append(song_data["artist"])
+        if song_data.get("title"):
+            valid_answers.append(song_data["title"])
+        # Artiste + titre ensemble
+        if song_data.get("artist") and song_data.get("title"):
+            valid_answers.append(f"{song_data['artist']} {song_data['title']}")
 
         best_score = 0.0
         for answer in valid_answers:
@@ -107,13 +109,21 @@ class GameEngine:
                 best_score = score
 
         is_correct = best_score >= MATCH_THRESHOLD
-        print(f"[CHECK] '{user_input}' → meilleur score : {best_score:.2f} → {'✅' if is_correct else '❌'}")
+        print(f"[CHECK] '{user_input}' → {best_score:.2f} → {'✅' if is_correct else '❌'}")
         return is_correct, best_score
 
     def build_expected_words(self, song_data: dict) -> list[str]:
-        """
-        Construit la liste des mots attendus pour la grammaire Vosk.
-        Permet d'accélérer massivement la reconnaissance.
-        """
         raw = song_data.get("phonetic_answers", "") or ""
-        return [a.strip().lower() for a in raw.split(",") if a.strip()]
+        words = [a.strip().lower() for a in raw.split(",") if a.strip()]
+
+        # Ajoute artiste et titre directement
+        if song_data.get("artist"):
+            words.append(song_data["artist"].lower())
+        if song_data.get("title"):
+            words.append(song_data["title"].lower())
+
+        words.append("[unk]")
+        return words
+    def set_language(self, language: str) -> None:
+        self.language   = language
+        self.model_path = MODEL_FR if language == "fr" else MODEL_EN

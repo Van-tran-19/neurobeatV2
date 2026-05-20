@@ -270,3 +270,23 @@ class DatabaseManager:
             ''', (username,))
             row = cursor.fetchone()
             return dict(row) if row and row['total_played'] > 0 else None
+        
+    def get_all_vocabulary(self) -> list[str]:
+        """Récupère tous les mots possibles pour la grammaire Vosk."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT artist, title, phonetic_answers FROM songs')
+            songs = cursor.fetchall()
+
+        vocab = set()
+        for song in songs:
+            if song['artist']:
+                vocab.add(song['artist'].lower())
+            if song['title']:
+                vocab.add(song['title'].lower())
+            if song['phonetic_answers']:
+                for answer in song['phonetic_answers'].split(','):  # ← virgule, pas point-virgule
+                    if answer.strip():
+                        vocab.add(answer.strip().lower())
+
+        return list(vocab)
