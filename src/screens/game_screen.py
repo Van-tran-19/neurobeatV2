@@ -191,9 +191,8 @@ class GameScreen(BaseScreen):
                
         # --- ENREGISTREMENT DU LOG COGNITIF ---
         if self.app.session_id and self._song:
-            # Transformation du chrono (secondes) en millisecondes
             reaction_ms = self._timer * 1000.0
-            self.db.log_reaction(
+            self.app.db.log_reaction(
                 session_id=self.app.session_id,
                 song_id=self._song["id"],
                 reaction_time_ms=reaction_ms,

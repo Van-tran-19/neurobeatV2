@@ -165,13 +165,16 @@ class DatabaseManager:
             return cursor.lastrowid
 
     def log_reaction(self, session_id, song_id, reaction_time_ms, was_correct):
-        """Enregistre les données de réaction pour analyse cognitive."""
+        """Enregistre les données de réaction (avec conversion stricte en entier pour SQLite)."""
+        # On force la valeur en entier : 1 si True, 0 si False
+        is_correct_int = 1 if was_correct else 0
+        
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO reaction_logs (session_id, song_id, reaction_time_ms, was_correct)
                 VALUES (?, ?, ?, ?)
-            ''', (session_id, song_id, reaction_time_ms, was_correct))
+            ''', (session_id, song_id, reaction_time_ms, is_correct_int))
             conn.commit()
             
     # --- MÉTHODES POUR LES PROFILS UTILISATEURS ---
@@ -254,6 +257,7 @@ class DatabaseManager:
             if doublons_supprimes > 0:
                 print(f"🧹 Nettoyage : {doublons_supprimes} profil(s) fantôme(s) supprimé(s).")
                 
+                
     def get_user_stats(self, username):
         """Calcule et récupère les statistiques cognitives globales pour un joueur."""
         with self.get_connection() as conn:
@@ -261,12 +265,20 @@ class DatabaseManager:
             cursor.execute('''
                 SELECT 
                     COUNT(r.id) as total_played,
-                    AVG(CASE WHEN r.was_correct = 1 THEN r.reaction_time_ms END) as avg_reaction_correct,
+                    AVG(CASE WHEN r.was_correct IN (1, '1', 'True', 'true') THEN r.reaction_time_ms END) as avg_reaction_correct,
                     AVG(r.reaction_time_ms) as avg_reaction_total,
-                    SUM(CASE WHEN r.was_correct = 1 THEN 1 ELSE 0 END) as total_correct
+                    SUM(CASE WHEN r.was_correct IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) as total_correct
                 FROM reaction_logs r
                 JOIN sessions s ON r.session_id = s.id
                 WHERE s.player_name = ?
             ''', (username,))
             row = cursor.fetchone()
-            return dict(row) if row and row['total_played'] > 0 else None
+            
+            # Si aucune partie n'a été jouée, on retourne None
+            if not row or row['total_played'] == 0:
+                return None
+                
+            stats = dict(row)
+            # Sécurité supplémentaire pour éviter que le calcul du ratio ne crash si total_correct est vide
+            stats['total_correct'] = stats['total_correct'] or 0
+            return stats

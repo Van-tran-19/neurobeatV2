@@ -85,7 +85,7 @@ class StatsScreen(BaseScreen):
 
             # Liste des indicateurs à afficher à l'écran
             stats_lines = [
-                f"CURRENT PLAYER : {self.app.current_user}",
+                f"CURRENT PLAYER : {self.app.current_user} —  Score : {self.app.current_score} pts",
                 f"MUSIC TESTED : {total}",
                 f"SUCCESS RATE : {correct} / {total} ({ratio:.1f}%)",
                 f"REACTION TIME : {time_correct_str}",
