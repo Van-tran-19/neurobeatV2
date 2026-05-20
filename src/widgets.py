@@ -7,10 +7,7 @@ across different screens.
 from __future__ import annotations
 import pygame
 import math
-from src.constants import (
-    C_PANEL, C_BORDER, C_GOLD, C_WHITE, C_GREY,
-    C_BTN, C_BTN_HOVER, C_NOTE_FILL, C_NOTE_LINE,
-)
+from src.constants import *
 
 
 # ── Drawing primitives ────────────────────────────────────────────────────────
@@ -19,12 +16,17 @@ def draw_rounded_rect(
     surface: pygame.Surface,
     colour: tuple,
     rect: pygame.Rect,
-    radius: int = 10,
+    radius: int = 12,
     alpha: int | None = None,
     border_colour: tuple | None = None,
     border_width: int = 0,
 ) -> None:
-    """Filled rounded rectangle with optional alpha and border."""
+    """Filled rounded rectangle with modern shadow, optional alpha and border."""
+    # 1. Ombre portée (Shadow) douce
+    shadow_rect = pygame.Rect(rect.x + 2, rect.y + 6, rect.width, rect.height)
+    pygame.draw.rect(surface, (8, 12, 22), shadow_rect, border_radius=radius)
+
+    # 2. Panneau principal
     if alpha is not None:
         tmp = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         pygame.draw.rect(tmp, (*colour[:3], alpha), tmp.get_rect(), border_radius=radius)
@@ -32,6 +34,7 @@ def draw_rounded_rect(
     else:
         pygame.draw.rect(surface, colour, rect, border_radius=radius)
 
+    # 3. Bordure
     if border_colour and border_width > 0:
         pygame.draw.rect(surface, border_colour, rect, border_width, border_radius=radius)
 
@@ -49,7 +52,7 @@ def blit_centered(
 # ── Widgets ───────────────────────────────────────────────────────────────────
 
 class Panel:
-    """Card panel with bold title, gold separator and body lines."""
+    """Card panel with bold title, separator and body lines."""
 
     def __init__(
         self,
@@ -60,7 +63,7 @@ class Panel:
         colour: tuple = C_PANEL,
         border_colour: tuple = C_BORDER,
         border_width: int = 2,
-        radius: int = 8,
+        radius: int = 16,
         title_colour: tuple = C_WHITE,
         body_colour: tuple = C_GREY,
         line_height_extra: int = 4,
@@ -87,28 +90,28 @@ class Panel:
             border_colour=self.border_colour, border_width=self.border_width,
         )
 
-        y = self.rect.y + 12
+        y = self.rect.y + 16
 
         if self.title and self.font_title:
             surf = self.font_title.render(self.title, True, self.title_colour)
             blit_centered(surface, surf, self.rect.centerx, y)
-            y += surf.get_height() + 6
+            y += surf.get_height() + 10
             pygame.draw.line(
                 surface, self.border_colour,
-                (self.rect.x + 8, y), (self.rect.right - 8, y), 1,
+                (self.rect.x + 16, y), (self.rect.right - 16, y), 2,
             )
-            y += 8
+            y += 12
 
         if self.font_body:
             lh = self.font_body.get_linesize() + self.line_height_extra
             for line in self.lines:
                 surf = self.font_body.render(line, True, self.body_colour)
-                surface.blit(surf, (self.rect.x + 12, y))
+                surface.blit(surf, (self.rect.x + 16, y))
                 y += lh
 
 
 class Button:
-    """Clickable button with hover state."""
+    """Clickable button with hover state and 3D animation."""
 
     def __init__(
         self,
@@ -118,11 +121,11 @@ class Button:
         colour: tuple = C_BTN,
         hover_colour: tuple = C_BTN_HOVER,
         text_colour: tuple = C_WHITE,
-        radius: int = 10,
+        radius: int = 12,
         border_colour: tuple | None = C_BORDER,
-        border_width: int = 2,
+        border_width: int = 0,
     ) -> None:
-        self.rect          = rect
+        self.rect          = pygame.Rect(rect)
         self.text          = text
         self.font          = font
         self.colour        = colour
@@ -132,24 +135,45 @@ class Button:
         self.border_colour = border_colour
         self.border_width  = border_width
         self._hovered      = False
+        self._pressed      = False
 
     def handle_event(self, event: pygame.event.Event) -> bool:
-        """Return True if the button was clicked this event."""
         if event.type == pygame.MOUSEMOTION:
             self._hovered = self.rect.collidepoint(event.pos)
+            if not self._hovered:
+                self._pressed = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.rect.collidepoint(event.pos):
+            if self._hovered:
+                self._pressed = True
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self._pressed and self._hovered:
+                self._pressed = False
                 return True
+            self._pressed = False
         return False
 
     def draw(self, surface: pygame.Surface) -> None:
-        colour = self.hover_colour if self._hovered else self.colour
-        draw_rounded_rect(
-            surface, colour, self.rect, self.radius,
-            border_colour=self.border_colour, border_width=self.border_width,
-        )
-        surf = self.font.render(self.text, True, self.text_colour)
-        blit_centered(surface, surf, self.rect.centerx, self.rect.centery - surf.get_height() // 2)
+        current_colour = self.hover_colour if self._hovered else self.colour
+        
+        # Animation : le bouton descend de 3 pixels quand on clique
+        y_offset = 3 if self._pressed else 0
+        display_rect = pygame.Rect(self.rect.x, self.rect.y + y_offset, self.rect.width, self.rect.height)
+
+        # Tranche 3D / Ombre (visible uniquement quand le bouton n'est pas cliqué)
+        if not self._pressed:
+            shadow_rect = pygame.Rect(self.rect.x, self.rect.y + 4, self.rect.width, self.rect.height)
+            pygame.draw.rect(surface, (49, 46, 129), shadow_rect, border_radius=self.radius) 
+
+        # Corps du bouton
+        pygame.draw.rect(surface, current_colour, display_rect, border_radius=self.radius)
+        
+        # Effet "Reflet" très léger en haut du bouton pour donner du volume
+        pygame.draw.rect(surface, (120, 130, 255), display_rect, width=1, border_radius=self.radius)
+
+        # Texte centré
+        text_surf = self.font.render(self.text, True, self.text_colour)
+        text_y = display_rect.centery - text_surf.get_height() // 2
+        blit_centered(surface, text_surf, display_rect.centerx, text_y)
 
 
 class ProgressBar:
@@ -160,7 +184,7 @@ class ProgressBar:
         rect: pygame.Rect,
         colour: tuple = C_GOLD,
         bg_colour: tuple = C_PANEL,
-        radius: int = 6,
+        radius: int = 10,
     ) -> None:
         self.rect      = rect
         self.colour    = colour
@@ -169,11 +193,13 @@ class ProgressBar:
         self.progress  = 1.0   # 0.0 → 1.0
 
     def draw(self, surface: pygame.Surface) -> None:
-        draw_rounded_rect(surface, self.bg_colour, self.rect, self.radius)
-        if self.progress > 0.0:
+        # Fond
+        pygame.draw.rect(surface, self.bg_colour, self.rect, border_radius=self.radius)
+        # Remplissage
+        if self.progress > 0.02:
             fill_w = max(self.radius * 2, int(self.rect.width * self.progress))
-            fill   = pygame.Rect(self.rect.x, self.rect.y, fill_w, self.rect.height)
-            draw_rounded_rect(surface, self.colour, fill, self.radius)
+            fill = pygame.Rect(self.rect.x, self.rect.y, fill_w, self.rect.height)
+            pygame.draw.rect(surface, self.colour, fill, border_radius=self.radius)
 
 
 class MusicStaff:
