@@ -3,53 +3,66 @@ NeuroBeat — Game logic : vérification des réponses et lancement du STT.
 """
 
 from __future__ import annotations
-import Levenshtein
-import os
+from thefuzz import fuzz
+from vosk import Model # <-- On importe Model ici
 
 from src.engine.stt_live import live_transcribe_optimized, MODEL_FR, MODEL_EN
 
-
 class GameEngine:
-    """
-    Encapsule la logique de reconnaissance vocale et de validation des réponses.
-    Instanciée une seule fois dans App et partagée entre les screens.
-    """
+    def __init__(self, db_manager) -> None:
+        self.db = db_manager 
+        
+        # PRÉ-CHARGEMENT EN RAM (Prendra quelques secondes au lancement du jeu)
+        print("[Système] Préchargement du modèle Français...")
+        self.loaded_model_fr = Model(MODEL_FR)
+        print("[Système] Préchargement du modèle Anglais...")
+        self.loaded_model_en = Model(MODEL_EN)
+        print("[Système] Moteur vocal prêt et chargé !")
 
-    def __init__(self, language: str = "fr") -> None:
-        self.language  = language
-        self.model_path = MODEL_FR if language == "fr" else MODEL_EN
+    def recognize_speech(self, song_data: dict) -> str:
+        # On choisit le modèle préchargé
+        lang = song_data.get("language", "fr").lower()
+        active_model = self.loaded_model_fr if lang == "fr" else self.loaded_model_en
 
-    def recognize_speech(self, expected_words: list[str] | None = None) -> str:
-        """
-        Lance la transcription live et retourne le texte reconnu.
+        # On construit le vocabulaire
+        expected_words = self.build_expected_words(song_data)
 
-        Args:
-            expected_words: Liste de réponses valides pour restreindre le vocabulaire Vosk.
-                            Passer None pour un vocabulaire ouvert (plus lent).
-        """
-        return live_transcribe_optimized(self.model_path, expected_words)
+        # On envoie L'OBJET model (et non plus le chemin texte)
+        return live_transcribe_optimized(active_model, expected_words)
 
+    # ... La suite du fichier (check_answer et build_expected_words) ne change pas ! ...
     def check_answer(self, user_input: str, song_data: dict) -> bool:
         """
-        Compare l'input utilisateur aux réponses phonétiques acceptées (stockées en DB).
-        Tolère les petites fautes grâce à la distance de Levenshtein (seuil 0.75).
-
-        Returns:
-            True si une réponse correspond, False sinon.
+        Utilise thefuzz (token_set_ratio) pour tolérer le bruit et les phrases longues.
         """
         raw_answers  = song_data.get("phonetic_answers", "") or ""
         valid_answers = [a.strip().lower() for a in raw_answers.split(",") if a.strip()]
-        user_clean   = user_input.lower().strip()
+        
+        # Ajout du titre, de l'artiste et des deux combinés dans les réponses valides
+        title = song_data.get("title", "").lower()
+        artist = song_data.get("artist", "").lower()
+        if title: valid_answers.append(title)
+        if artist: valid_answers.append(artist)
+        if title and artist: valid_answers.append(f"{artist} {title}")
 
+        user_clean = user_input.lower().strip()
+
+        # token_set_ratio donne un score sur 100. 80 est un bon seuil pour la voix.
         for answer in valid_answers:
-            if Levenshtein.ratio(user_clean, answer) > 0.75:
+            if fuzz.token_set_ratio(user_clean, answer) > 80:
                 return True
         return False
 
     def build_expected_words(self, song_data: dict) -> list[str]:
         """
-        Construit la liste des mots attendus pour la grammaire Vosk à partir d'une chanson.
-        Permet d'accélérer massivement la reconnaissance.
+        Prépare les mots que Vosk a le droit de comprendre.
         """
         raw = song_data.get("phonetic_answers", "") or ""
-        return [a.strip().lower() for a in raw.split(",") if a.strip()]
+        words = [a.strip().lower() for a in raw.split(",") if a.strip()]
+        
+        title = song_data.get("title", "").lower()
+        artist = song_data.get("artist", "").lower()
+        if title: words.append(title)
+        if artist: words.append(artist)
+        
+        return words

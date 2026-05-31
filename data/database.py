@@ -40,7 +40,8 @@ class DatabaseManager:
                     phonetic_answers TEXT,
                     kind TEXT DEFAULT 'Général',
                     difficulty INTEGER DEFAULT 1,
-                    anecdote TEXT DEFAULT ''
+                    anecdote TEXT DEFAULT '',
+                    language TEXT DEFAULT 'fr' --
                 )
             ''')
             
@@ -79,28 +80,25 @@ class DatabaseManager:
 
     # --- MÉTHODES POUR LES CHANSONS ---
 
-    def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1, anecdote=""):
+    # Ajoute "language='fr'" dans les paramètres
+    def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1, anecdote="", language="fr"):
         """Ajoute une chanson uniquement si elle n'existe pas déjà, en normalisant le thème."""
-        
-        # 1. NETTOYAGE DU THÈME (enlève les espaces autour et met tout en majuscules)
         clean_kind = kind.strip().upper()
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
-            # Vérifier si le fichier existe déjà dans la base
             cursor.execute('SELECT id FROM songs WHERE filename = ?', (filename,))
             if cursor.fetchone():
                 print(f"⏸ Ignoré : {title} (déjà dans la base)")
                 return
 
-            # Si elle n'existe pas, on l'ajoute avec le thème nettoyé (clean_kind)
+            # Ajoute "language" dans l'INSERT INTO et un "?" supplémentaire
             cursor.execute('''
-                INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty, anecdote)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (filename, artist, title, phonetic_answers, clean_kind, difficulty, anecdote))
+                INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty, anecdote, language)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (filename, artist, title, phonetic_answers, clean_kind, difficulty, anecdote, language))
             conn.commit()
-            print(f"✅ Ajouté : {title} dans le thème {clean_kind}")
+            print(f"Ajouté : {title} dans le thème {clean_kind} (Langue: {language})")
             
     def normalize_existing_themes(self):
         """Met à jour tous les thèmes existants dans la DB pour qu'ils soient uniformes."""

@@ -212,19 +212,21 @@ class GameScreen(BaseScreen):
         """Le joueur appuie sur ESPACE : on pause la musique et on écoute."""
         pygame.mixer.music.pause()
         self._state = _STATE_LISTENING
-        expected    = self.engine.build_expected_words(self._song)
+        
+        # On passe directement la chanson entière au thread
         self._stt_thread = threading.Thread(
             target=self._run_stt,
-            args=(expected,),
+            args=(self._song,),
             daemon=True,
         )
         self._stt_thread.start()
 
-    def _run_stt(self, expected_words: list[str]) -> None:
+    def _run_stt(self, song_data: dict) -> None: 
         """Tourne dans un thread séparé pour ne pas geler le rendu."""
-        guess = self.engine.recognize_speech(expected_words)
-        correct = self.engine.check_answer(guess, self._song)
-        # Retour dans le thread principal via un event pygame custom
+        # Le GameEngine gère désormais le choix de la langue en interne
+        guess = self.engine.recognize_speech(song_data)
+        correct = self.engine.check_answer(guess, song_data)
+        
         pygame.event.post(pygame.event.Event(
             pygame.USEREVENT,
             {"action": "stt_done", "guess": guess, "correct": correct},

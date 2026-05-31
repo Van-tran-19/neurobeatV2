@@ -22,11 +22,13 @@ AUDIO_PATH = os.path.join(sys.path[0], "assets", "audio")
 
 class App:
     def __init__(self) -> None:
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
         pygame.init()
         pygame.mixer.init()
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("NeuroBeat")
+        pygame.mouse.set_visible(True)
         self.clock  = pygame.time.Clock()
         self.width  = WIDTH
         self.height = HEIGHT
@@ -38,7 +40,9 @@ class App:
         self.session_id = None
 
         # Moteur de jeu (STT + validation) partagé entre tous les screens
-        self.engine: GameEngine = GameEngine(language="en")
+        # Moteur de jeu (STT + validation) partagé entre tous les screens
+        # On lui passe self.db pour qu'il puisse lire les données
+        self.engine: GameEngine = GameEngine(self.db)
 
         # Thème sélectionné sur le home screen (None = tous les thèmes)
         self.selected_theme: str | None = None
@@ -86,7 +90,8 @@ class App:
         print(f"Logged in as: {self.current_user} | Score: {self.current_score}")
 
     def run(self) -> None:
-        """Boucle principale."""
+        pygame.mouse.set_visible(False) # On cache la vraie souris défectueuse
+        
         while True:
             dt = self.clock.tick(FPS) / 1000.0
 
@@ -98,9 +103,10 @@ class App:
 
             self._active.update(dt)
             self._active.draw()
+            
+            # --- DESSINE UNE SOURIS MANUELLE ---
+            mx, my = pygame.mouse.get_pos()
+            pygame.draw.circle(self.screen, (255, 255, 255), (mx, my), 5) # Un petit point blanc
+            pygame.draw.circle(self.screen, (0, 0, 0), (mx, my), 5, 1)    # Un contour noir
+            
             pygame.display.flip()
-
-        # Start on the splash screen
-        self._active_key: str = "splash"
-        self._active = self._screens["splash"]
-        self._active.on_enter()
