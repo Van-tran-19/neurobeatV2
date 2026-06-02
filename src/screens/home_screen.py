@@ -75,6 +75,7 @@ class HomeScreen(BaseScreen):
         self.ETAT_CHOIX_JOUEURS  = "choix_joueurs"
         self.ETAT_SAISIE_J1      = "saisie_j1"
         self.ETAT_SAISIE_J2      = "saisie_j2"
+        self.ETAT_CHOIX_MANCHES  = "choix_manches"
         self.menu_state = self.ETAT_MENU_PRINCIPAL
 
         # Variables temporaires pour la saisie de texte
