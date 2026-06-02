@@ -190,27 +190,33 @@ class HomeScreen(BaseScreen):
                     if event.unicode and len(self._input_name_j1) < 15:
                         self._input_name_j1 += event.unicode
 
+        # --- 1. Écran de saisie du Joueur 2 ---
         elif self.menu_state == self.ETAT_SAISIE_J2:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self._input_name_j2.strip():
                     self.app.nom_j2 = self._input_name_j2.strip()
-                    # Lancement du jeu en mode 1v1
-                    self.menu_state = self.ETAT_CHOIX_MANCHES
+                    self.menu_state = self.ETAT_CHOIX_MANCHES # <--- On valide et on passe aux manches
                 elif event.key == pygame.K_BACKSPACE:
                     self._input_name_j2 = self._input_name_j2[:-1]
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_state = self.ETAT_SAISIE_J1
-                elif self.menu_state == self.ETAT_CHOIX_MANCHES:
-                    self._slider_manches.handle_event(event)
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_RETURN:
-                            self.app.nb_manches_totales = self._slider_manches.val
-                            self.app.manches_jouees = 0
-                            self.app.score_j1 = 0
-                            self.app.score_j2 = 0
-                            self.app.go_to("game")
-                        elif event.key == pygame.K_ESCAPE:
-                            self.menu_state = self.ETAT_SAISIE_J2
+                else:
+                    # CE fameux "else" : Il sert à taper les lettres du prénom !
+                    if event.unicode and len(self._input_name_j2) < 15:
+                        self._input_name_j2 += event.unicode
+
+        # --- 2. Écran du choix des manches (désimbriqué, au même niveau que les autres elif) ---
+        elif self.menu_state == self.ETAT_CHOIX_MANCHES:
+            self._slider_manches.handle_event(event)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    self.app.nb_manches_totales = self._slider_manches.val
+                    self.app.manches_jouees = 0
+                    self.app.score_j1 = 0
+                    self.app.score_j2 = 0
+                    self.app.go_to("game")
+                elif event.key == pygame.K_ESCAPE:
+                    self.menu_state = self.ETAT_SAISIE_J2
                 
                 else:
                     if event.unicode and len(self._input_name_j2) < 15:
