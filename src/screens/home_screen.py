@@ -97,6 +97,12 @@ class HomeScreen(BaseScreen):
 
         self._sync_app_theme()
 
+        # On remet le menu dans son état par défaut pour réactiver les boutons
+        self.menu_state = self.ETAT_MENU_PRINCIPAL
+        # On nettoie les saisies précédentes
+        self._input_name_j1 = ""
+        self._input_name_j2 = ""
+
     def on_exit(self) -> None:
         pass
 
