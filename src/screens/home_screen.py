@@ -70,6 +70,17 @@ class HomeScreen(BaseScreen):
 
         self._staff = MusicStaff(self.screen, 60, self.H - 60, self.W - 120, amplitude=18)
 
+        # États de configuration pour le menu
+        self.ETAT_MENU_PRINCIPAL = "menu"
+        self.ETAT_CHOIX_JOUEURS  = "choix_joueurs"
+        self.ETAT_SAISIE_J1      = "saisie_j1"
+        self.ETAT_SAISIE_J2      = "saisie_j2"
+        self.menu_state = self.ETAT_MENU_PRINCIPAL
+
+        # Variables temporaires pour la saisie de texte
+        self._input_name_j1 = ""
+        self._input_name_j2 = ""
+
     # ------------------------------------------------------------------
     # Cycle de vie
     # ------------------------------------------------------------------
@@ -111,26 +122,56 @@ class HomeScreen(BaseScreen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self.app.go_to("game")
-            elif event.key == pygame.K_LEFT:
+        if self.menu_state == self.ETAT_MENU_PRINCIPAL:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self.menu_state = self.ETAT_CHOIX_JOUEURS  # On demande le nombre de joueurs au lieu de lancer directement
+            
+            # Conserver la gestion des clics sur les boutons existants
+            if self._btn_play.handle_event(event):
+                self.menu_state = self.ETAT_CHOIX_JOUEURS
+            if self._btn_leaderboard.handle_event(event):
+                self.app.go_to("leaderboard")
+            if self._btn_stats.handle_event(event):
+                self.app.go_to("stats")
+            if self._btn_prev.handle_event(event):
                 self._prev_theme()
-            elif event.key == pygame.K_RIGHT:
+            if self._btn_next.handle_event(event):
                 self._next_theme()
 
-        if self._btn_play.handle_event(event):
-            self.app.go_to("game")
-        if self._btn_leaderboard.handle_event(event):
-            self.app.go_to("leaderboard")
-        if self._btn_stats.handle_event(event):
-            self.app.go_to("stats")
+        elif self.menu_state == self.ETAT_CHOIX_JOUEURS:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    self.app.mode_1v1 = False
+                    self.menu_state = self.ETAT_SAISIE_J1
+                elif event.key == pygame.K_2:
+                    self.app.mode_1v1 = True
+                    self.menu_state = self.ETAT_SAISIE_J1
 
-        # Flèches du carrousel
-        if self._btn_prev.handle_event(event):
-            self._prev_theme()
-        if self._btn_next.handle_event(event):
-            self._next_theme()
+        elif self.menu_state in (self.ETAT_SAISIE_J1, self.ETAT_SAISIE_J2):
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if self.menu_state == self.ETAT_SAISIE_J1:
+                        if self._input_name_j1.strip(): self.app.nom_j1 = self._input_name_j1.strip()
+                        
+                        if self.app.mode_1v1:
+                            self.menu_state = self.ETAT_SAISIE_J2
+                        else:
+                            self.app.go_to("game")
+                    else:
+                        if self._input_name_j2.strip(): self.app.nom_j2 = self._input_name_j2.strip()
+                        self.app.go_to("game")
+
+                elif event.key == pygame.K_BACKSPACE:
+                    if self.menu_state == self.ETAT_SAISIE_J1:
+                        self._input_name_j1 = self._input_name_j1[:-1]
+                    else:
+                        self._input_name_j2 = self._input_name_j2[:-1]
+                else:
+                    if len(event.unicode) == 1 and (event.unicode.isalnum() or event.unicode in " -_"):
+                        if self.menu_state == self.ETAT_SAISIE_J1 and len(self._input_name_j1) < 12:
+                            self._input_name_j1 += event.unicode
+                        elif self.menu_state == self.ETAT_SAISIE_J2 and len(self._input_name_j2) < 12:
+                            self._input_name_j2 += event.unicode       self._next_theme()
 
     # ------------------------------------------------------------------
     # Update / Draw
@@ -144,7 +185,12 @@ class HomeScreen(BaseScreen):
         self._draw_dot_grid()
 
         # Profil utilisateur
-        if self.app.current_user:
+        # Profil utilisateur + Score global ou Scores du 1v1 actuel
+        if self.app.mode_1v1:
+            hud_text = f"🎮 {self.app.nom_j1}: {self.app.score_j1} pts   VS   {self.app.nom_j2}: {self.app.score_j2} pts"
+            surf_profile = self._font_sub.render(hud_text, True, C_GOLD)
+            self.screen.blit(surf_profile, (20, 20))
+        elif self.app.current_user:
             profile_text = f"Player: {self.app.current_user} | Score: {self.app.current_score}"
             surf_profile = self._font_sub.render(profile_text, True, C_WHITE)
             self.screen.blit(surf_profile, (20, 20))
@@ -167,6 +213,36 @@ class HomeScreen(BaseScreen):
         self._staff.draw()
         self._btn_play.draw(self.screen)
         self._btn_leaderboard.draw(self.screen)
+
+        # --- Superposition des écrans de configuration ---
+        if self.menu_state != self.ETAT_MENU_PRINCIPAL:
+            # Assombrir l'écran en arrière-plan
+            overlay = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
+            overlay.fill((15, 15, 26, 240))
+            self.screen.blit(overlay, (0, 0))
+
+            if self.menu_state == self.ETAT_CHOIX_JOUEURS:
+                t1 = self._font_title.render("MODE DE JEU", True, C_GOLD)
+                t2 = self._font_btn.render("Appuyez sur [1] pour SOLO  ou  [2] pour 1v1", True, C_WHITE)
+                blit_centered(self.screen, t1, self.W // 2, self.H // 2 - 50)
+                blit_centered(self.screen, t2, self.W // 2, self.H // 2 + 30)
+
+            elif self.menu_state == self.ETAT_SAISIE_J1:
+                t1 = self._font_title.render("JOUEUR 1", True, C_GOLD)
+                t2 = self._font_btn.render(f"Entrez votre nom : {self._input_name_j1}_", True, C_WHITE)
+                t3 = self._font_small.render("Appuyez sur [Entrée] pour valider", True, C_GREY)
+                blit_centered(self.screen, t1, self.W // 2, self.H // 2 - 60)
+                blit_centered(self.screen, t2, self.W // 2, self.H // 2)
+                blit_centered(self.screen, t3, self.W // 2, self.H // 2 + 60)
+
+            elif self.menu_state == self.ETAT_SAISIE_J2:
+                t1 = self._font_title.render("JOUEUR 2", True, C_GOLD)
+                t2 = self._font_btn.render(f"Entrez votre nom : {self._input_name_j2}_", True, C_WHITE)
+                t3 = self._font_small.render("Appuyez sur [Entrée] pour valider", True, C_GREY)
+                blit_centered(self.screen, t1, self.W // 2, self.H // 2 - 60)
+                blit_centered(self.screen, t2, self.W // 2, self.H // 2)
+                blit_centered(self.screen, t3, self.W // 2, self.H // 2 + 60)
+                
         self._btn_stats.draw(self.screen)
 
     def _draw_carousel(self) -> None:

@@ -62,6 +62,14 @@ class App:
         self._active          = self._screens["splash"]
         self._active.on_enter()
 
+        # --- Mode 1v1 (Blind Test) ---
+        self.mode_1v1 = False         # False = Solo, True = 1v1
+        self.nom_j1 = "Joueur 1"
+        self.nom_j2 = "Joueur 2"
+        self.score_j1 = 0
+        self.score_j2 = 0
+        self.buzzer_actif = None       # Contiendra 'J1' ou 'J2' pendant la reconnaissance vocale
+
     def go_to(self, key: str) -> None:
         """Navigue vers un écran nommé."""
         if key not in self._screens:

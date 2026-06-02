@@ -109,10 +109,18 @@ class GameScreen(BaseScreen):
                 self._buzz()
 
         if self._state == _STATE_RESULT:
-            if self._btn_home.handle_event(event):
-                self.app.go_to("home")
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.app.go_to("game")   # Rejouer
+            if event.type == pygame.KEYDOWN:
+                if self.app.mode_1v1:
+                    if event.key == pygame.K_s:      # Touche S -> Joueur 1 Buzz
+                        self.app.buzzer_actif = "J1"
+                        self._buzz()
+                    elif event.key == pygame.K_l:    # Touche L -> Joueur 2 Buzz
+                        self.app.buzzer_actif = "J2"
+                        self._buzz()
+                else:
+                    if event.key == pygame.K_SPACE:  # En solo, on garde ESPACE
+                        self.app.buzzer_actif = "J1"
+                        self._buzz()
 
     # ── Update ───────────────────────────────────────────────────────────────
 
@@ -168,6 +176,19 @@ class GameScreen(BaseScreen):
         self._guess        = guess
         self._result_timer = 0.0
         self._state        = _STATE_RESULT
+
+        if correct:
+            if self.app.mode_1v1:
+                if self.app.buzzer_actif == "J1":
+                    self.app.score_j1 += 100
+                elif self.app.buzzer_actif == "J2":
+                    self.app.score_j2 += 100
+            elif self.app.current_user:
+                # Code existant pour le mode solo / BDD
+                self.app.db.save_score(self.app.current_user, 100) 
+                profile = self.app.db.get_profile(self.app.current_user)
+                if profile:
+                    self.app.current_score = profile['total_score']
 
         # --- SEND SCORE TO DATABASE ---
         if correct and self.app.current_user:
@@ -260,23 +281,26 @@ class GameScreen(BaseScreen):
 
     def _draw_playing(self, cx: int, cy: int) -> None:
         panel_r = self._panel.rect
-        draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
-                          border_colour=C_BORDER, border_width=2)
+        draw_rounded_rect(self.screen, C_PANEL, panel_r, 16, border_colour=C_BORDER, border_width=2)
 
         hint = self._font_big.render("🎵  Listen Closely", True, C_WHITE)
         blit_centered(self.screen, hint, cx, cy - 50)
 
-        sub = self._font_med.render("Press SPACE to buzz !", True, C_GREY)
+        if self.app.mode_1v1:
+            msg = f"{self.app.nom_j1} [S]  |  [L] {self.app.nom_j2} — BUZZER !"
+        else:
+            msg = "Press SPACE to buzz !"
+            
+        sub = self._font_med.render(msg, True, C_GREY)
         blit_centered(self.screen, sub, cx, cy + 20)
-
         self._bar.draw(self.screen)
 
     def _draw_listening(self, cx: int, cy: int) -> None:
         panel_r = self._panel.rect
-        draw_rounded_rect(self.screen, C_PANEL, panel_r, 16,
-                          border_colour=C_GOLD, border_width=3)
+        draw_rounded_rect(self.screen, C_PANEL, panel_r, 16, border_colour=C_GOLD, border_width=3)
 
-        lbl = self._font_big.render("🎤  SPEAK !", True, C_GOLD)
+        nom_joueur = self.app.nom_j1 if self.app.buzzer_actif == "J1" else self.app.nom_j2
+        lbl = self._font_big.render(f"🎤 {nom_joueur.upper()} SPEAK !", True, C_GOLD)
         blit_centered(self.screen, lbl, cx, cy - 50)
 
         sub = self._font_med.render("Say the artist or the title…", True, C_GREY)
