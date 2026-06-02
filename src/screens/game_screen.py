@@ -104,23 +104,52 @@ class GameScreen(BaseScreen):
     # ── Events ───────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if self._state == _STATE_PLAYING:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                self._buzz()
+        # 1. Fin de la reconnaissance vocale (STT)
+        if event.type == pygame.USEREVENT and getattr(event, "action", None) == "stt_done":
+            self._show_result(event.correct, event.guess)
+            return
 
-        if self._state == _STATE_RESULT:
+        # 2. Gestion du BUZZ instantané pendant que la musique joue
+        if self._state == _STATE_PLAYING:
             if event.type == pygame.KEYDOWN:
                 if self.app.mode_1v1:
-                    if event.key == pygame.K_s:      # Touche S -> Joueur 1 Buzz
+                    if event.key == pygame.K_s:      # Joueur 1 Buzz immédiatement
                         self.app.buzzer_actif = "J1"
                         self._buzz()
-                    elif event.key == pygame.K_l:    # Touche L -> Joueur 2 Buzz
+                        return
+                    elif event.key == pygame.K_l:    # Joueur 2 Buzz immédiatement
                         self.app.buzzer_actif = "J2"
                         self._buzz()
+                        return
                 else:
-                    if event.key == pygame.K_SPACE:  # En solo, on garde ESPACE
+                    if event.key == pygame.K_SPACE:  # Mode Solo classique
                         self.app.buzzer_actif = "J1"
                         self._buzz()
+                        return
+            
+            # Conserver le bouton pause / clic souris si nécessaire
+            if self._btn_pause.handle_event(event):
+                self._state = _STATE_PAUSED
+                pygame.mixer.music.pause()
+                return
+
+        # 3. Gestion de l'écran des résultats
+        elif self._state == _STATE_RESULT:
+            if self._btn_home.handle_event(event):
+                self.app.go_to("home")
+                return
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self.app.go_to("game")
+                return
+
+        # 4. Gestion de l'écran d'erreur (Pas de musique)
+        elif self._state == _STATE_NO_SONG:
+            if self._btn_home.handle_event(event):
+                self.app.go_to("home")
+                return
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_RETURN):
+                self.app.go_to("home")
+                return
 
     # ── Update ───────────────────────────────────────────────────────────────
 
