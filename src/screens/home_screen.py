@@ -16,7 +16,7 @@ class HomeScreen(BaseScreen):
         self._font_title  = pygame.font.SysFont("Arial", 62, bold=True)
         self._font_sub    = pygame.font.SysFont("Arial", 20)
         self._font_btn    = pygame.font.SysFont("Arial", 26, bold=True)
-        self._font_theme  = pygame.font.SysFont("Arial", 22, bold=True)  # légèrement plus grand
+        self._font_theme  = pygame.font.SysFont("Arial", 22, bold=True)
         self._font_small  = pygame.font.SysFont("Arial", 18)
 
         cx = self.W // 2
@@ -41,7 +41,7 @@ class HomeScreen(BaseScreen):
         )
 
         # --- Carrousel : boutons fléchés gauche / droite ---
-        arrow_y    = self.H // 2 + 10      # même zone verticale qu'avant
+        arrow_y    = self.H // 2 + 10
         arrow_size = 44
 
         self._btn_prev = Button(
@@ -82,6 +82,7 @@ class HomeScreen(BaseScreen):
         self._input_name_j1 = ""
         self._input_name_j2 = ""
 
+        # Curseur pour sélectionner le nombre de manches de 1 à 10
         self._slider_manches = Slider(
             pygame.Rect(cx - 150, self.H // 2, 300, 20),
             min_val=1, max_val=10, initial_val=3, font=self._font_btn
@@ -186,28 +187,26 @@ class HomeScreen(BaseScreen):
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_state = self.ETAT_CHOIX_JOUEURS
                 else:
-                    # Enregistre les caractères tapés (limité à 15 caractères)
                     if event.unicode and len(self._input_name_j1) < 15:
                         self._input_name_j1 += event.unicode
 
-        # --- 1. Écran de saisie du Joueur 2 ---
         elif self.menu_state == self.ETAT_SAISIE_J2:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self._input_name_j2.strip():
                     self.app.nom_j2 = self._input_name_j2.strip()
-                    self.menu_state = self.ETAT_CHOIX_MANCHES # <--- On valide et on passe aux manches
+                    self.menu_state = self.ETAT_CHOIX_MANCHES
                 elif event.key == pygame.K_BACKSPACE:
                     self._input_name_j2 = self._input_name_j2[:-1]
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_state = self.ETAT_SAISIE_J1
                 else:
-                    # CE fameux "else" : Il sert à taper les lettres du prénom !
                     if event.unicode and len(self._input_name_j2) < 15:
                         self._input_name_j2 += event.unicode
 
-        # --- 2. Écran du choix des manches (désimbriqué, au même niveau que les autres elif) ---
         elif self.menu_state == self.ETAT_CHOIX_MANCHES:
+            # Capturer les clics et glissements de souris sur le curseur
             self._slider_manches.handle_event(event)
+            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     self.app.nb_manches_totales = self._slider_manches.val
@@ -217,10 +216,7 @@ class HomeScreen(BaseScreen):
                     self.app.go_to("game")
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_state = self.ETAT_SAISIE_J2
-                
-                else:
-                    if event.unicode and len(self._input_name_j2) < 15:
-                        self._input_name_j2 += event.unicode
+
     # ------------------------------------------------------------------
     # Update / Draw
     # ------------------------------------------------------------------
@@ -232,8 +228,7 @@ class HomeScreen(BaseScreen):
         self.screen.fill(C_BG)
         self._draw_dot_grid()
 
-        # Profil utilisateur
-        # Profil utilisateur + Score global ou Scores du 1v1 actuel
+        # Profil utilisateur ou Scores du 1v1 actuel
         if self.app.mode_1v1:
             hud_text = f"🎮 {self.app.nom_j1}: {self.app.score_j1} pts   VS   {self.app.nom_j2}: {self.app.score_j2} pts"
             surf_profile = self._font_sub.render(hud_text, True, C_GOLD)
@@ -292,42 +287,29 @@ class HomeScreen(BaseScreen):
                 blit_centered(self.screen, t2, self.W // 2, self.H // 2)
                 blit_centered(self.screen, t3, self.W // 2, self.H // 2 + 60)
 
+            elif self.menu_state == self.ETAT_CHOIX_MANCHES:
+                t1 = self._font_title.render("NOMBRE DE MANCHES", True, C_GOLD)
+                t2 = self._font_small.render("Utilisez la souris pour ajuster, puis [Entrée] pour jouer", True, C_GREY)
+                blit_centered(self.screen, t1, self.W // 2, self.H // 2 - 80)
+                self._slider_manches.draw(self.screen)
+                blit_centered(self.screen, t2, self.W // 2, self.H // 2 + 60)
+
         self._btn_stats.draw(self.screen)
 
     def _draw_carousel(self) -> None:
-        """Dessine la vitrine du thème courant + les deux flèches."""
         if not self._themes:
             return
 
-        # Fond doré (bordure active) derrière la vitrine
-        draw_rounded_rect(
-            self.screen, C_GOLD,
-            self._theme_rect.inflate(4, 4), 12,
-        )
-        # Fond intérieur
-        draw_rounded_rect(
-            self.screen, C_PANEL,
-            self._theme_rect, 10,
-        )
+        draw_rounded_rect(self.screen, C_GOLD, self._theme_rect.inflate(4, 4), 12)
+        draw_rounded_rect(self.screen, C_PANEL, self._theme_rect, 10)
 
-        # Texte du thème courant
         label = self._themes[self._theme_index].upper()
         surf  = self._font_theme.render(label, True, C_GOLD)
-        blit_centered(
-            self.screen, surf,
-            self._theme_rect.centerx,
-            self._theme_rect.centery,
-        )
+        blit_centered(self.screen, surf, self._theme_rect.centerx, self._theme_rect.centery)
 
-        # Indicateur de position  ex: "2 / 5"
         indicator = f"{self._theme_index + 1} / {len(self._themes)}"
         surf_ind  = self._font_small.render(indicator, True, C_GREY)
-        blit_centered(
-            self.screen, surf_ind,
-            self._theme_rect.centerx,
-            self._theme_rect.bottom + 16,
-        )
+        blit_centered(self.screen, surf_ind, self._theme_rect.centerx, self._theme_rect.bottom + 16)
 
-        # Flèches
         self._btn_prev.draw(self.screen)
         self._btn_next.draw(self.screen)
