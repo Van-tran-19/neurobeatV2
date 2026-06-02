@@ -4,7 +4,7 @@ pygame
 # Reconnaissance vocale (STT)
 vosk
 pyaudio
-
+thefuzz
 # Téléchargement et conversion audio
 yt-dlp
 
