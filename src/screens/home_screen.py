@@ -7,7 +7,7 @@ from __future__ import annotations
 import pygame
 from src.screens.base_screen import BaseScreen
 from src.constants import C_BG, C_GOLD, C_WHITE, C_BTN, C_BTN_HOVER, C_GREY, C_BORDER, C_PANEL
-from src.widgets import Button, MusicStaff, draw_rounded_rect, blit_centered
+from src.widgets import Button, MusicStaff, draw_rounded_rect, blit_centered, Slider
 
 
 class HomeScreen(BaseScreen):
@@ -80,6 +80,11 @@ class HomeScreen(BaseScreen):
         # Variables temporaires pour la saisie de texte
         self._input_name_j1 = ""
         self._input_name_j2 = ""
+
+        self._slider_manches = Slider(
+            pygame.Rect(cx - 150, self.H // 2, 300, 20),
+            min_val=1, max_val=10, initial_val=3, font=self._font_btn
+        )
 
     # ------------------------------------------------------------------
     # Cycle de vie
@@ -189,11 +194,23 @@ class HomeScreen(BaseScreen):
                 if event.key == pygame.K_RETURN and self._input_name_j2.strip():
                     self.app.nom_j2 = self._input_name_j2.strip()
                     # Lancement du jeu en mode 1v1
-                    self.app.go_to("game")
+                    self.menu_state = self.ETAT_CHOIX_MANCHES
                 elif event.key == pygame.K_BACKSPACE:
                     self._input_name_j2 = self._input_name_j2[:-1]
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_state = self.ETAT_SAISIE_J1
+                elif self.menu_state == self.ETAT_CHOIX_MANCHES:
+                    self._slider_manches.handle_event(event)
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RETURN:
+                            self.app.nb_manches_totales = self._slider_manches.val
+                            self.app.manches_jouees = 0
+                            self.app.score_j1 = 0
+                            self.app.score_j2 = 0
+                            self.app.go_to("game")
+                        elif event.key == pygame.K_ESCAPE:
+                            self.menu_state = self.ETAT_SAISIE_J2
+                
                 else:
                     if event.unicode and len(self._input_name_j2) < 15:
                         self._input_name_j2 += event.unicode

@@ -70,6 +70,9 @@ class App:
         self.score_j2 = 0
         self.buzzer_actif = None       # Contiendra 'J1' ou 'J2' pendant la reconnaissance vocale
 
+        self.nb_manches_totales = 3   
+        self.manches_jouees = 0
+
 
     def go_to(self, key: str) -> None:
         """Navigue vers un écran nommé."""

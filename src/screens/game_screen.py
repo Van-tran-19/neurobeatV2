@@ -116,8 +116,8 @@ class GameScreen(BaseScreen):
         elif self._state == _STATE_RESULT:
             self._result_timer += dt
             # Retour auto à l'accueil après 4 secondes
-            if self._result_timer >= 20.0:
-                self.app.go_to("home")
+            if self._result_timer >= 5.0:
+                self._next_round_or_home()
 
     # ── Draw ─────────────────────────────────────────────────────────────────
 
@@ -129,7 +129,26 @@ class GameScreen(BaseScreen):
         cx, cy = self.W // 2, self.H // 2
         
         # --- Affichage du profil utilisateur (HUD) ---
-        if self.app.current_user:
+        # --- Affichage du profil utilisateur / HUD 1v1 ---
+        if self.app.mode_1v1:
+            manche_actuelle = min(self.app.manches_jouees + 1, self.app.nb_manches_totales)
+            manche_str = f"Manche {manche_actuelle} / {self.app.nb_manches_totales}"
+            
+            if self.app.manches_jouees >= self.app.nb_manches_totales:
+                manche_str = "MORT SUBITE (Égalité)"
+
+            hud_text = f"🎮 {self.app.nom_j1}: {self.app.score_j1} pts   VS   {self.app.nom_j2}: {self.app.score_j2} pts  |  {manche_str}"
+            
+            color = C_WHITE
+            # Indicateur visuel d'égalité si le score n'est pas de 0-0
+            if self.app.score_j1 == self.app.score_j2 and self.app.score_j1 > 0:
+                hud_text += "  [🔥 ÉGALITÉ]"
+                color = C_GOLD
+                
+            surf_hud = self._font_small.render(hud_text, True, color)
+            self.screen.blit(surf_hud, (20, 20))
+
+        elif self.app.current_user:
             hud_text = f"Player: {self.app.current_user} | Score: {self.app.current_score}"
             surf_hud = self._font_small.render(hud_text, True, C_WHITE)
             self.screen.blit(surf_hud, (20, 20))
@@ -155,6 +174,9 @@ class GameScreen(BaseScreen):
         self._guess        = guess
         self._result_timer = 0.0
         self._state        = _STATE_RESULT
+
+        if self.app.mode_1v1:
+            self.app.manches_jouees += 1
 
         if correct:
             if self.app.mode_1v1:
@@ -258,7 +280,7 @@ class GameScreen(BaseScreen):
             if self._btn_home.handle_event(event):
                 self.app.go_to("home")
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.app.go_to("game")
+                self._next_round_or_home()
         
         if self._state == _STATE_NO_SONG:
             if self._btn_home.handle_event(event):
@@ -361,3 +383,19 @@ class GameScreen(BaseScreen):
         blit_centered(self.screen, sub, cx, cy + 30)
 
         self._btn_home.draw(self.screen)
+    
+    def _next_round_or_home(self) -> None:
+        """Détermine s'il faut lancer la manche suivante, appliquer la mort subite, ou terminer."""
+        if self.app.mode_1v1:
+            if self.app.manches_jouees >= self.app.nb_manches_totales:
+                if self.app.score_j1 == self.app.score_j2:
+                    # ÉGALITÉ : Mort subite (on rajoute 1 manche)
+                    self.app.nb_manches_totales += 1
+                    self.app.go_to("game")
+                else:
+                    # FIN : Quelqu'un a gagné, on retourne au menu principal
+                    self.app.go_to("home")
+            else:
+                self.app.go_to("game")
+        else:
+            self.app.go_to("home")

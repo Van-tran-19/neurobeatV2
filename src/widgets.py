@@ -9,7 +9,6 @@ import pygame
 import math
 from src.constants import *
 
-
 # ── Drawing primitives ────────────────────────────────────────────────────────
 
 def draw_rounded_rect(
@@ -266,3 +265,61 @@ class MusicStaff:
                 pygame.Rect(cx + 8, cy - 28, 14, 14),
                 0, math.pi, 2,
             )
+
+class Slider:
+    """A horizontal slider to select a numeric value."""
+
+    def __init__(
+        self,
+        rect: pygame.Rect,
+        min_val: int,
+        max_val: int,
+        initial_val: int,
+        font: pygame.font.Font,
+    ) -> None:
+        self.rect = rect
+        self.min_val = min_val
+        self.max_val = max_val
+        self.val = initial_val
+        self.font = font
+        self._dragging = False
+
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # Zone de clic légèrement agrandie pour plus de confort
+            hitbox = self.rect.inflate(0, 20)
+            if hitbox.collidepoint(event.pos):
+                self._dragging = True
+                self._update_val(event.pos[0])
+                return True
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self._dragging:
+                self._dragging = False
+                return True
+        elif event.type == pygame.MOUSEMOTION:
+            if self._dragging:
+                self._update_val(event.pos[0])
+                return True
+        return False
+
+    def _update_val(self, x: int) -> None:
+        rel_x = max(0, min(x - self.rect.x, self.rect.width))
+        ratio = rel_x / self.rect.width
+        self.val = int(self.min_val + ratio * (self.max_val - self.min_val))
+
+    def draw(self, surface: pygame.Surface) -> None:
+        # Ligne de fond grise
+        pygame.draw.line(surface, C_GREY, (self.rect.x, self.rect.centery), (self.rect.right, self.rect.centery), 6)
+        
+        # Ligne de progression dorée
+        ratio = (self.val - self.min_val) / (self.max_val - self.min_val) if self.max_val > self.min_val else 0
+        fill_x = self.rect.x + int(ratio * self.rect.width)
+        pygame.draw.line(surface, C_GOLD, (self.rect.x, self.rect.centery), (fill_x, self.rect.centery), 6)
+        
+        # Bouton du curseur
+        pygame.draw.circle(surface, C_WHITE, (fill_x, self.rect.centery), 12)
+        pygame.draw.circle(surface, C_GOLD, (fill_x, self.rect.centery), 12, 2)
+        
+        # Affichage du texte au-dessus
+        val_surf = self.font.render(f"{self.val} Manches", True, C_WHITE)
+        blit_centered(surface, val_surf, self.rect.centerx, self.rect.y - 35)
