@@ -103,53 +103,80 @@ class GameScreen(BaseScreen):
 
     # ── Events ───────────────────────────────────────────────────────────────
 
+    # ------------------------------------------------------------------
+    # Gestion des événements
+    # ------------------------------------------------------------------
+
     def handle_event(self, event: pygame.event.Event) -> None:
-        # 1. Fin de la reconnaissance vocale (STT)
-        if event.type == pygame.USEREVENT and getattr(event, "action", None) == "stt_done":
-            self._show_result(event.correct, event.guess)
+        # 1. Gestion des clics sur les boutons du carrousel de thèmes (toujours actifs)
+        if self._btn_prev.handle_event(event):
+            self._prev_theme()
+            return
+        if self._btn_next.handle_event(event):
+            self._next_theme()
             return
 
-        # 2. Gestion du BUZZ instantané pendant que la musique joue
-        if self._state == _STATE_PLAYING:
-            if event.type == pygame.KEYDOWN:
-                if self.app.mode_1v1:
-                    if event.key == pygame.K_s:      # Joueur 1 Buzz immédiatement
-                        self.app.buzzer_actif = "J1"
-                        self._buzz()
-                        return
-                    elif event.key == pygame.K_l:    # Joueur 2 Buzz immédiatement
-                        self.app.buzzer_actif = "J2"
-                        self._buzz()
-                        return
-                else:
-                    if event.key == pygame.K_SPACE:  # Mode Solo classique
-                        self.app.buzzer_actif = "J1"
-                        self._buzz()
-                        return
+        # 2. Gestion selon l'état actuel du menu de configuration
+        if self.menu_state == self.ETAT_MENU_PRINCIPAL:
+            # Clic sur START -> On passe au choix du mode (Solo / 1v1)
+            if self._btn_play.handle_event(event):
+                self.menu_state = self.ETAT_CHOIX_JOUEURS
+                return
             
-            # Conserver le bouton pause / clic souris si nécessaire
-            if self._btn_pause.handle_event(event):
-                self._state = _STATE_PAUSED
-                pygame.mixer.music.pause()
+            # Clic sur LEADERBOARD
+            if self._btn_leaderboard.handle_event(event):
+                self.app.go_to("leaderboard")
+                return
+            
+            # Clic sur STATISTICS
+            if self._btn_stats.handle_event(event):
+                self.app.go_to("stats")
                 return
 
-        # 3. Gestion de l'écran des résultats
-        elif self._state == _STATE_RESULT:
-            if self._btn_home.handle_event(event):
-                self.app.go_to("home")
-                return
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.app.go_to("game")
-                return
+        elif self.menu_state == self.ETAT_CHOIX_JOUEURS:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1 or event.key == pygame.K_KP1:
+                    self.app.mode_1v1 = False
+                    self.menu_state = self.ETAT_SAISIE_J1
+                elif event.key == pygame.K_2 or event.key == pygame.K_KP2:
+                    self.app.mode_1v1 = True
+                    self.menu_state = self.ETAT_SAISIE_J1
+                elif event.key == pygame.K_ESCAPE:
+                    self.menu_state = self.ETAT_MENU_PRINCIPAL
 
-        # 4. Gestion de l'écran d'erreur (Pas de musique)
-        elif self._state == _STATE_NO_SONG:
-            if self._btn_home.handle_event(event):
-                self.app.go_to("home")
-                return
-            if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_RETURN):
-                self.app.go_to("home")
-                return
+        elif self.menu_state == self.ETAT_SAISIE_J1:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN and self._input_name_j1.strip():
+                    self.app.nom_j1 = self._input_name_j1.strip()
+                    if self.app.mode_1v1:
+                        self.menu_state = self.ETAT_SAISIE_J2
+                    else:
+                        # Mode Solo : initialisations et lancement du jeu
+                        self.app.nom_j2 = ""
+                        self.app.current_user = self.app.nom_j1
+                        self.app.go_to("game")
+                elif event.key == pygame.K_BACKSPACE:
+                    self._input_name_j1 = self._input_name_j1[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    self.menu_state = self.ETAT_CHOIX_JOUEURS
+                else:
+                    # Enregistre les caractères tapés (limité à 15 caractères)
+                    if event.unicode and len(self._input_name_j1) < 15:
+                        self._input_name_j1 += event.unicode
+
+        elif self.menu_state == self.ETAT_SAISIE_J2:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN and self._input_name_j2.strip():
+                    self.app.nom_j2 = self._input_name_j2.strip()
+                    # Lancement du jeu en mode 1v1
+                    self.app.go_to("game")
+                elif event.key == pygame.K_BACKSPACE:
+                    self._input_name_j2 = self._input_name_j2[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    self.menu_state = self.ETAT_SAISIE_J1
+                else:
+                    if event.unicode and len(self._input_name_j2) < 15:
+                        self._input_name_j2 += event.unicode
 
     # ── Update ───────────────────────────────────────────────────────────────
 
