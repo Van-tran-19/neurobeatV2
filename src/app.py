@@ -57,9 +57,9 @@ class App:
             "stats":  StatsScreen(self),
         }
 
-        # Démarrage sur le splash
-        self._active_key: str = "splash"
-        self._active          = self._screens["splash"]
+        # Démarrage directement sur le home screen au lieu du splash/login
+        self._active_key: str = "home"
+        self._active          = self._screens["home"]
         self._active.on_enter()
 
         # --- Mode 1v1 (Blind Test) ---
@@ -69,6 +69,7 @@ class App:
         self.score_j1 = 0
         self.score_j2 = 0
         self.buzzer_actif = None       # Contiendra 'J1' ou 'J2' pendant la reconnaissance vocale
+
 
     def go_to(self, key: str) -> None:
         """Navigue vers un écran nommé."""
