@@ -14,10 +14,9 @@ NeuroBeat V2 is an interactive musical application developed as a Semester 6 aca
 Because the project relies on pyaudio for live microphone capture, specific system-level libraries are required before installing the Python packages. 
 
 For Debian/Ubuntu-based systems, run the following commands:\
-    ```
-    sudo apt-get update\
+    sudo apt-get update  
     sudo apt-get install portaudio19-dev python3-dev
-    ```
+    
 ## Installation
 
 1. Clone the repository:
