@@ -15,7 +15,7 @@ Because the project relies on pyaudio for live microphone capture, specific syst
 
 For Debian/Ubuntu-based systems, run the following commands:\
     ```
-    sudo apt-get update
+    sudo apt-get update\
     sudo apt-get install portaudio19-dev python3-dev
     ```
 ## Installation
