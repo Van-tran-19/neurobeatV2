@@ -1,3 +1,4 @@
+# app.py
 """
 NeuroBeat — Application controller.
 
@@ -33,21 +34,21 @@ class App:
         self.width  = WIDTH
         self.height = HEIGHT
 
-        # Couche données
+        # Data layer
         self.db: DatabaseManager = DatabaseManager()
         self.current_user = None
         self.current_score = 0
         self.session_id = None
 
-        # Moteur de jeu (STT + validation) partagé entre tous les screens
-        # Moteur de jeu (STT + validation) partagé entre tous les screens
-        # On lui passe self.db pour qu'il puisse lire les données
+        # Game engine (STT + validation) shared between all screens
+        # Game engine (STT + validation) shared between all screens
+        # We pass self.db to it so it can read the data
         self.engine: GameEngine = GameEngine(self.db)
 
-        # Thème sélectionné sur le home screen (None = tous les thèmes)
+        # Theme selected on the home screen (None = all themes)
         self.selected_theme: str | None = None
 
-        # Registre des écrans — instanciés une seule fois
+        # Screen registry — instantiated only once
         self._screens: dict[str, object] = {
             "splash": SplashScreen(self),
             "login":  LoginScreen(self),
@@ -57,25 +58,25 @@ class App:
             "stats":  StatsScreen(self),
         }
 
-        # Démarrage directement sur le home screen au lieu du splash/login
+        # Direct start on the home screen instead of the splash/login
         self._active_key: str = "home"
         self._active          = self._screens["home"]
         self._active.on_enter()
 
-        # --- Mode 1v1 (Blind Test) ---
+        # --- 1v1 Mode (Blind Test) ---
         self.mode_1v1 = False         # False = Solo, True = 1v1
         self.nom_j1 = "Joueur 1"
         self.nom_j2 = "Joueur 2"
         self.score_j1 = 0
         self.score_j2 = 0
-        self.buzzer_actif = None       # Contiendra 'J1' ou 'J2' pendant la reconnaissance vocale
+        self.buzzer_actif = None       # Will contain 'J1' or 'J2' during voice recognition
 
         self.nb_manches_totales = 3   
         self.manches_jouees = 0
 
 
     def go_to(self, key: str) -> None:
-        """Navigue vers un écran nommé."""
+        """Navigates to a named screen."""
         if key not in self._screens:
             raise KeyError(f"Unknown screen: '{key}'")
         self._active.on_exit()
@@ -84,25 +85,25 @@ class App:
         self._active.on_enter()
         
     def login(self, name: str) -> None:
-        """Connecte l'utilisateur et récupère son score."""
+        """Logs in the user and retrieves their score."""
         self.current_user = name
         
-        # 1. On nettoie la base de données des éventuels doublons AVANT de charger
+        # 1. We clean the database of any duplicates BEFORE loading
         self.db.clean_duplicate_profiles()
         
-        # 2. On récupère le profil (qui est maintenant garanti d'être unique)
+        # 2. We retrieve the profile (which is now guaranteed to be unique)
         profile = self.db.get_profile(name)
         
         if profile:
             self.current_score = profile['total_score']
         else:
             self.current_score = 0
-            self.db.save_score(name, 0) # Crée le nouvel utilisateur s'il n'existe pas
+            self.db.save_score(name, 0) # Creates the new user if they do not exist
             
         print(f"Logged in as: {self.current_user} | Score: {self.current_score}")
 
     def run(self) -> None:
-        pygame.mouse.set_visible(False) # On cache la vraie souris défectueuse
+        pygame.mouse.set_visible(False) # We hide the real defective mouse
         
         while True:
             dt = self.clock.tick(FPS) / 1000.0
@@ -116,9 +117,9 @@ class App:
             self._active.update(dt)
             self._active.draw()
             
-            # --- DESSINE UNE SOURIS MANUELLE ---
+            # --- DRAWS A MANUAL MOUSE ---
             mx, my = pygame.mouse.get_pos()
-            pygame.draw.circle(self.screen, (255, 255, 255), (mx, my), 5) # Un petit point blanc
-            pygame.draw.circle(self.screen, (0, 0, 0), (mx, my), 5, 1)    # Un contour noir
+            pygame.draw.circle(self.screen, (255, 255, 255), (mx, my), 5) # A small white dot
+            pygame.draw.circle(self.screen, (0, 0, 0), (mx, my), 5, 1)    # A black outline
             
             pygame.display.flip()

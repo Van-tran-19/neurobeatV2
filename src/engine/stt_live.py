@@ -32,11 +32,11 @@ def live_transcribe_optimized(model: Model, expected_words: list[str] | None = N
             frames_per_buffer=CHUNK_SIZE,
         )
     except Exception as e:
-        print(f"[STT] Erreur ouverture micro : {e}")
+        print(f"[STT] Error opening microphone: {e}")
         p.terminate()
         return ""
 
-    print(f"[STT] Écoute pendant {RECORD_SECONDS} secondes...")
+    print(f"[STT] Listening for {RECORD_SECONDS} seconds...")
     stream.start_stream()
 
     num_chunks    = int((SAMPLE_RATE / CHUNK_SIZE) * RECORD_SECONDS)
@@ -60,5 +60,5 @@ def live_transcribe_optimized(model: Model, expected_words: list[str] | None = N
     p.terminate()
 
     result_text = " ".join(transcription).strip()
-    print(f"[STT] Résultat : '{result_text}'")
+    print(f"[STT] Result: '{result_text}'")
     return result_text

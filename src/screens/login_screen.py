@@ -39,7 +39,7 @@ class LoginScreen(BaseScreen):
             elif event.key == pygame.K_BACKSPACE:
                 self.username_input = self.username_input[:-1]
             else:
-                # Ajoute le caractère tapé
+                # Adds the typed character
                 self.username_input += event.unicode
                 
         if self._btn_login.handle_event(event):
@@ -59,7 +59,7 @@ class LoginScreen(BaseScreen):
 
         cx, cy = self.W // 2, self.H // 2
 
-        # Titre
+        # Title
         surf_title = self._font_title.render("LOGIN", True, C_GOLD)
         blit_centered(self.screen, surf_title, cx, 150)
 
@@ -67,13 +67,13 @@ class LoginScreen(BaseScreen):
         surf_label = self._font_label.render("Enter your username :", True, C_WHITE)
         blit_centered(self.screen, surf_label, cx, cy - 60)
 
-        # Champ de texte (fond)
+        # Text field (background)
         draw_rounded_rect(self.screen, C_PANEL, self.input_rect, 10, border_colour=C_BORDER, border_width=2)
         
-        # Texte saisi
+        # Typed text
         surf_input = self._font_input.render(self.username_input, True, C_WHITE)
-        # On centre le texte à l'intérieur du champ
+        # Center the text inside the field
         self.screen.blit(surf_input, (self.input_rect.x + 10, self.input_rect.y + 10))
 
-        # Bouton
+        # Button
         self._btn_login.draw(self.screen)

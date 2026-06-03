@@ -38,13 +38,13 @@ class SplashScreen(BaseScreen):
         self.screen.fill(C_BG)
         self._draw_dot_grid()
 
-        # Titre principal
+        # Main title
         surf = self._font_big.render("NEUROBEAT", True, C_GOLD)
         blit_centered(self.screen, surf, self.W // 2, self.H // 2 - 60)
 
-        # Sous-titre
+        # Subtitle
         sub = self._font_sub.render("The Blindtest of your dream", True, C_WHITE)
         blit_centered(self.screen, sub, self.W // 2, self.H // 2 + 20)
 
-        # Staff animé
+        # Animated staff
         self._staff.draw()

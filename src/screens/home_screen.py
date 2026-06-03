@@ -1,6 +1,7 @@
+# home_screen.py
 """
 NeuroBeat — Home screen.
-Affiche le titre, un sélecteur de thème (carrousel) et le bouton COMMENCER.
+Displays the title, a theme selector (carousel), and the START button.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ class HomeScreen(BaseScreen):
 
         cx = self.W // 2
 
-        # --- Boutons d'action ---
+        # --- Action buttons ---
         self._btn_play = Button(
             pygame.Rect(cx - 120, self.H - 180, 240, 60),
             "START",
@@ -40,7 +41,7 @@ class HomeScreen(BaseScreen):
             hover_colour=C_BTN_HOVER,
         )
 
-        # --- Carrousel : boutons fléchés gauche / droite ---
+        # --- Carousel: left / right arrow buttons ---
         arrow_y    = self.H // 2 + 10
         arrow_size = 44
 
@@ -61,16 +62,16 @@ class HomeScreen(BaseScreen):
             border_colour=C_BORDER,
         )
 
-        # Rectangle de la "vitrine" du thème sélectionné (centré entre les deux flèches)
+        # Rectangle of the selected theme's "showcase" (centered between the two arrows)
         self._theme_rect = pygame.Rect(cx - 140, arrow_y, 280, arrow_size)
 
-        # Liste des thèmes et index courant
+        # List of themes and current index
         self._themes: list[str] = []
         self._theme_index: int  = 0
 
         self._staff = MusicStaff(self.screen, 60, self.H - 60, self.W - 120, amplitude=18)
 
-        # États de configuration pour le menu
+        # Configuration states for the menu
         self.ETAT_MENU_PRINCIPAL = "menu"
         self.ETAT_CHOIX_JOUEURS  = "choix_joueurs"
         self.ETAT_SAISIE_J1      = "saisie_j1"
@@ -78,24 +79,24 @@ class HomeScreen(BaseScreen):
         self.ETAT_CHOIX_MANCHES  = "choix_manches"
         self.menu_state = self.ETAT_MENU_PRINCIPAL
 
-        # Variables temporaires pour la saisie de texte
+        # Temporary variables for text input
         self._input_name_j1 = ""
         self._input_name_j2 = ""
 
-        # Curseur pour sélectionner le nombre de manches de 1 à 10
+        # Slider to select the number of rounds from 1 to 10
         self._slider_manches = Slider(
             pygame.Rect(cx - 150, self.H // 2, 300, 20),
             min_val=1, max_val=10, initial_val=3, font=self._font_btn
         )
 
     # ------------------------------------------------------------------
-    # Cycle de vie
+    # Lifecycle
     # ------------------------------------------------------------------
 
     def on_enter(self) -> None:
         self._themes = ["ALL"] + self.db.get_themes()
 
-        # Retrouve l'index correspondant au thème mémorisé dans app
+        # Finds the index corresponding to the theme stored in app
         current = self.app.selected_theme or "ALL"
         if current in self._themes:
             self._theme_index = self._themes.index(current)
@@ -104,9 +105,9 @@ class HomeScreen(BaseScreen):
 
         self._sync_app_theme()
 
-        # On remet le menu dans son état par défaut pour réactiver les boutons
+        # Reset the menu to its default state to reactivate the buttons
         self.menu_state = self.ETAT_MENU_PRINCIPAL
-        # On nettoie les saisies précédentes
+        # Clear previous inputs
         self._input_name_j1 = ""
         self._input_name_j2 = ""
 
@@ -118,7 +119,7 @@ class HomeScreen(BaseScreen):
     # ------------------------------------------------------------------
 
     def _sync_app_theme(self) -> None:
-        """Met à jour app.selected_theme depuis l'index courant."""
+        """Updates app.selected_theme from the current index."""
         selected = self._themes[self._theme_index]
         self.app.selected_theme = None if selected == "ALL" else selected
 
@@ -131,11 +132,11 @@ class HomeScreen(BaseScreen):
         self._sync_app_theme()
 
     # ------------------------------------------------------------------
-    # Gestion des événements
+    # Event handling
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        # 1. Gestion des clics sur les boutons du carrousel de thèmes (toujours actifs)
+        # 1. Handle clicks on theme carousel buttons (always active)
         if self._btn_prev.handle_event(event):
             self._prev_theme()
             return
@@ -143,19 +144,19 @@ class HomeScreen(BaseScreen):
             self._next_theme()
             return
 
-        # 2. Gestion selon l'état actuel du menu de configuration
+        # 2. Handle according to the current state of the configuration menu
         if self.menu_state == self.ETAT_MENU_PRINCIPAL:
-            # Clic sur START -> On passe au choix du mode (Solo / 1v1)
+            # Click on START -> Move to mode selection (Solo / 1v1)
             if self._btn_play.handle_event(event):
                 self.menu_state = self.ETAT_CHOIX_JOUEURS
                 return
             
-            # Clic sur LEADERBOARD
+            # Click on LEADERBOARD
             if self._btn_leaderboard.handle_event(event):
                 self.app.go_to("leaderboard")
                 return
             
-            # Clic sur STATISTICS
+            # Click on STATISTICS
             if self._btn_stats.handle_event(event):
                 self.app.go_to("stats")
                 return
@@ -178,7 +179,7 @@ class HomeScreen(BaseScreen):
                     if self.app.mode_1v1:
                         self.menu_state = self.ETAT_SAISIE_J2
                     else:
-                        # Mode Solo : initialisations et lancement du jeu
+                        # Solo Mode: initializations and game launch
                         self.app.nom_j2 = ""
                         self.app.current_user = self.app.nom_j1
                         self.app.go_to("game")
@@ -204,7 +205,7 @@ class HomeScreen(BaseScreen):
                         self._input_name_j2 += event.unicode
 
         elif self.menu_state == self.ETAT_CHOIX_MANCHES:
-            # Capturer les clics et glissements de souris sur le curseur
+            # Capture mouse clicks and drags on the slider
             self._slider_manches.handle_event(event)
             
             if event.type == pygame.KEYDOWN:
@@ -228,7 +229,7 @@ class HomeScreen(BaseScreen):
         self.screen.fill(C_BG)
         self._draw_dot_grid()
 
-        # Profil utilisateur ou Scores du 1v1 actuel
+        # User profile or current 1v1 Scores
         if self.app.mode_1v1:
             hud_text = f"🎮 {self.app.nom_j1}: {self.app.score_j1} pts   VS   {self.app.nom_j2}: {self.app.score_j2} pts"
             surf_profile = self._font_sub.render(hud_text, True, C_GOLD)
@@ -238,7 +239,7 @@ class HomeScreen(BaseScreen):
             surf_profile = self._font_sub.render(profile_text, True, C_WHITE)
             self.screen.blit(surf_profile, (20, 20))
 
-        # Titre
+        # Title
         surf = self._font_title.render("NEUROBEAT", True, C_GOLD)
         blit_centered(self.screen, surf, self.W // 2, 100)
 
@@ -249,17 +250,17 @@ class HomeScreen(BaseScreen):
         lbl = self._font_sub.render("THEME", True, C_GOLD)
         blit_centered(self.screen, lbl, self.W // 2, self.H // 2 - 10)
 
-        # --- Carrousel ---
+        # --- Carousel ---
         self._draw_carousel()
 
-        # Boutons d'action + staff
+        # Action buttons + staff
         self._staff.draw()
         self._btn_play.draw(self.screen)
         self._btn_leaderboard.draw(self.screen)
 
-        # --- Superposition des écrans de configuration ---
+        # --- Configuration screens overlay ---
         if self.menu_state != self.ETAT_MENU_PRINCIPAL:
-            # Assombrir l'écran en arrière-plan
+            # Darken the background screen
             overlay = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
             overlay.fill((15, 15, 26, 240))
             self.screen.blit(overlay, (0, 0))
