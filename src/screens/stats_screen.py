@@ -1,6 +1,6 @@
 """
-NeuroBeat — Écran de statistiques cognitives.
-Affiche les métriques de performance et de réactivité du patient/joueur.
+NeuroBeat — Cognitive statistics screen.
+Displays performance and reactivity metrics of the patient/player.
 """
 from __future__ import annotations
 import pygame
@@ -35,7 +35,7 @@ class StatsScreen(BaseScreen):
         self._stats = None
 
     def on_enter(self) -> None:
-        """Recharge les statistiques fraîches du joueur à l'ouverture de l'écran."""
+        """Reloads fresh player statistics when opening the screen."""
         if self.app.current_user:
             self._stats = self.db.get_user_stats(self.app.current_user)
         else:
@@ -57,10 +57,10 @@ class StatsScreen(BaseScreen):
         self.screen.fill(C_BG)
         cx, cy = self.W // 2, self.H // 2
 
-        # Dessin du conteneur central
+        # Draw the central container
         draw_rounded_rect(self.screen, C_PANEL, self._panel.rect, 16, border_colour=C_BORDER, border_width=2)
 
-        # Titre de la page
+        # Page title
         title_surf = self._font_title.render("COGNITIVE REVIEW", True, C_GOLD)
         blit_centered(self.screen, title_surf, cx, cy - 150)
 
@@ -83,7 +83,7 @@ class StatsScreen(BaseScreen):
             time_correct_str = f"{avg_time_correct:.0f} ms" if avg_time_correct else "N/A"
             time_total_str = f"{avg_time_total:.0f} ms" if avg_time_total else "N/A"
 
-            # Liste des indicateurs à afficher à l'écran
+            # List of indicators to display on the screen
             stats_lines = [
                 f"CURRENT PLAYER : {self.app.current_user} —  Score : {self.app.current_score} pts",
                 f"MUSIC TESTED : {total}",

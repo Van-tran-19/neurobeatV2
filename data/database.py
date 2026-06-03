@@ -8,29 +8,29 @@ DB_PATH = os.path.join(sys.path[0], "data", "blindtest.db")
 
 class DatabaseManager:
     def __init__(self, db_name="blindtest.db"):
-        # Localisation de la base de données dans le dossier 'data'
+        # Locate the database
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.db_name = os.path.join(base_dir, db_name)
         
-        # 1. Establish connection FIRST
+        # Establish connection FIRST
         self.conn = sqlite3.connect(self.db_name)
         self.conn.row_factory = sqlite3.Row
         
-        # 2. THEN setup database tables
+        # THEN setup database tables
         self.setup_database()
 
     def get_connection(self):
-        """Établit une connexion avec SQLite et active le format dictionnaire."""
+        """Establish the connection with SQLite and activate the dictionary format."""
         conn = sqlite3.connect(self.db_name)
         conn.row_factory = sqlite3.Row
         return conn
 
     def setup_database(self):
-        """Crée les tables nécessaires si elles n'existent pas."""
+        """Create the necessary tables if they don't exist."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Table des chansons
+            # Song Table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS songs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +45,7 @@ class DatabaseManager:
                 )
             ''')
             
-            # Table des sessions joueurs
+            # Players sessions table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS sessions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +55,7 @@ class DatabaseManager:
                 )
             ''')
             
-            # Table des logs de performance (Serious Game)
+            # Logs of performances tables (serious game)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS reaction_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +68,7 @@ class DatabaseManager:
                 )
             ''')
 
-            # NEW: Table for User Profiles
+            # Table for User Profiles
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS profiles (
                     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,11 +78,11 @@ class DatabaseManager:
             ''')
             conn.commit()
 
-    # --- MÉTHODES POUR LES CHANSONS ---
+    # --- Methods for songs ---
 
-    # Ajoute "language='fr'" dans les paramètres
+    # Add attribute "fr"
     def add_song(self, filename, artist, title, phonetic_answers, kind='Général', difficulty=1, anecdote="", language="fr"):
-        """Ajoute une chanson uniquement si elle n'existe pas déjà, en normalisant le thème."""
+        """Adds a song only if it does not already exist, normalizing the theme."""
         clean_kind = kind.strip().upper()
 
         with self.get_connection() as conn:
@@ -92,7 +92,7 @@ class DatabaseManager:
                 print(f"⏸ Ignoré : {title} (déjà dans la base)")
                 return
 
-            # Ajoute "language" dans l'INSERT INTO et un "?" supplémentaire
+            # Adds "language" in the INSERT INTO and an extra "?"
             cursor.execute('''
                 INSERT INTO songs (filename, artist, title, phonetic_answers, kind, difficulty, anecdote, language)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -101,10 +101,10 @@ class DatabaseManager:
             print(f"Ajouté : {title} dans le thème {clean_kind} (Langue: {language})")
             
     def normalize_existing_themes(self):
-        """Met à jour tous les thèmes existants dans la DB pour qu'ils soient uniformes."""
+        """Updates all existing themes in the DB to make them uniform."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            # On met tout en majuscules (UPPER) et on enlève les espaces (TRIM)
+            # Convert everything to uppercase (UPPER) and remove spaces (TRIM)
             cursor.execute('''
                 UPDATE songs 
                 SET kind = UPPER(TRIM(kind))
@@ -113,7 +113,7 @@ class DatabaseManager:
             print("🧹 Base de données nettoyée : Les thèmes sont maintenant fusionnés !")
 
     def get_random_song(self, theme=None):
-        """Récupère une chanson au hasard, optionnellement filtrée par thème."""
+        """Fetches a random song, optionally filtered by theme."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             if theme:
@@ -125,10 +125,10 @@ class DatabaseManager:
             return dict(row) if row else None
         
     def remove_duplicates(self):
-        """Supprime tous les doublons de la table songs (basé sur le nom du fichier)."""
+        """Removes all duplicates from the songs table (based on the filename)."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            # Supprime les lignes dont l'ID n'est pas le plus petit ID pour ce nom de fichier
+            # Removes rows where the ID is not the smallest ID for this filename
             cursor.execute('''
                 DELETE FROM songs 
                 WHERE id NOT IN (
@@ -143,19 +143,19 @@ class DatabaseManager:
                 print(f"🧹 Nettoyage : {doublons_supprimes} doublon(s) supprimé(s).")
 
     def get_themes(self):
-        """Récupère la liste unique des thèmes/genres disponibles en base."""
+        """Retrieves the unique list of themes/genres available in the database."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT DISTINCT kind FROM songs')
             themes = [row['kind'] for row in cursor.fetchall()]
             
-            # Retourne une liste par défaut si la base est vide pour éviter le crash de l'app
+            # Returns a default list if the database is empty to prevent the app from crashing
             return themes if themes else ["Général"]
 
-    # --- MÉTHODES POUR LE SERIOUS GAME (STATS) ---
+    # --- METHODS FOR THE SERIOUS GAME (STATS) ---
 
     def create_session(self, player_name):
-        """Démarre une nouvelle session de jeu."""
+        """Starts a new game session."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('INSERT INTO sessions (player_name) VALUES (?)', (player_name,))
@@ -163,8 +163,8 @@ class DatabaseManager:
             return cursor.lastrowid
 
     def log_reaction(self, session_id, song_id, reaction_time_ms, was_correct):
-        """Enregistre les données de réaction (avec conversion stricte en entier pour SQLite)."""
-        # On force la valeur en entier : 1 si True, 0 si False
+        """Logs reaction data (with strict integer conversion for SQLite)."""
+        # Force the value to integer: 1 if True, 0 if False
         is_correct_int = 1 if was_correct else 0
         
         with self.get_connection() as conn:
@@ -175,7 +175,7 @@ class DatabaseManager:
             ''', (session_id, song_id, reaction_time_ms, is_correct_int))
             conn.commit()
             
-    # --- MÉTHODES POUR LES PROFILS UTILISATEURS ---
+    # --- METHODS FOR USER PROFILES ---
 
     def save_score(self, username, score):
         """Update high score for a specific player or create them if they don't exist."""
@@ -195,18 +195,18 @@ class DatabaseManager:
             return cursor.fetchone()
         
     def get_random_song(self, theme=None, exclude_id=None):
-        """Récupère une chanson au hasard, en excluant la précédente pour éviter les répétitions."""
+        """Fetches a random song, excluding the previous one to avoid repetitions."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             query = 'SELECT * FROM songs WHERE 1=1'
             params = []
 
-            # Filtrer par thème si ce n'est pas "Tous" / "All"
+            # Filter by theme if it is not "Tous" / "All"
             if theme and theme != "ALL" and theme != "Tous":
                 query += ' AND kind = ?'
                 params.append(theme)
 
-            # Exclure la musique qui vient juste de passer
+            # Exclude the song that just played
             if exclude_id is not None:
                 query += ' AND id != ?'
                 params.append(exclude_id)
@@ -231,12 +231,12 @@ class DatabaseManager:
             return [dict(row) for row in cursor.fetchall()]
         
     def clean_duplicate_profiles(self):
-        """Supprime les pseudos en double et garde uniquement celui avec le meilleur score."""
+        """Removes duplicate usernames and only keeps the one with the highest score."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Cette requête SQL trouve le meilleur score pour chaque pseudo 
-            # et supprime toutes les autres lignes correspondantes.
+            # This SQL query finds the best score for each username 
+            # and deletes all other corresponding rows.
             cursor.execute('''
                 DELETE FROM profiles 
                 WHERE user_id NOT IN (
@@ -257,7 +257,7 @@ class DatabaseManager:
                 
                 
     def get_user_stats(self, username):
-        """Calcule et récupère les statistiques cognitives globales pour un joueur."""
+        """Calculates and retrieves global cognitive statistics for a player."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -272,11 +272,11 @@ class DatabaseManager:
             ''', (username,))
             row = cursor.fetchone()
             
-            # Si aucune partie n'a été jouée, on retourne None
+            # If no games have been played, return None
             if not row or row['total_played'] == 0:
                 return None
                 
             stats = dict(row)
-            # Sécurité supplémentaire pour éviter que le calcul du ratio ne crash si total_correct est vide
+            # Additional safety to prevent the ratio calculation from crashing if total_correct is empty
             stats['total_correct'] = stats['total_correct'] or 0
             return stats

@@ -1,3 +1,4 @@
+# base_screen.py
 """
 NeuroBeat — Abstract base class for all screens.
 Every screen receives a reference to the App (for navigation, fonts, DB, engine)
@@ -17,17 +18,17 @@ class BaseScreen(ABC):
         self.W      = app.width
         self.H      = app.height
         self.db     = app.db
-        self.engine = app.engine   # GameEngine partagé
+        self.engine = app.engine   # Shared GameEngine
 
-    # ── Lifecycle hooks ──────────────────────────────────────────────────────
+    # ── Lifecycle hooks
 
     def on_enter(self) -> None:
-        """Appelé chaque fois que cet écran devient actif."""
+        """Called every time this screen becomes active."""
 
     def on_exit(self) -> None:
-        """Appelé chaque fois que cet écran est désactivé."""
+        """Called every time this screen is deactivated."""
 
-    # ── Interface obligatoire ────────────────────────────────────────────────
+    # ── Mandatory interface 
 
     @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None: ...
@@ -38,7 +39,7 @@ class BaseScreen(ABC):
     @abstractmethod
     def draw(self) -> None: ...
 
-    # ── Helpers partagés ─────────────────────────────────────────────────────
+    # ── Shared helpers
 
     def _blit(
         self,
